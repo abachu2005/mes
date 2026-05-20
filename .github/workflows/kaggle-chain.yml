@@ -1,0 +1,107 @@
+name: kaggle-chain
+
+# Runs the full Kaggle pipeline (preprocess -> train_riemannian -> train_eegnet -> validate)
+# entirely on GitHub-hosted runners, polling Kaggle from there. Safe to close laptop.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_preprocess:
+        description: "Skip preprocess (re-use existing HF dataset)"
+        required: false
+        default: "false"
+      skip_riemannian:
+        description: "Skip Riemannian baseline training"
+        required: false
+        default: "false"
+      skip_eegnet:
+        description: "Skip EEGNet training (GPU - slow)"
+        required: false
+        default: "false"
+      skip_validate:
+        description: "Skip validation"
+        required: false
+        default: "false"
+
+jobs:
+  chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350   # GitHub hard caps job at 360 min; leave 10 min buffer
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO:   ${{ secrets.HF_USERNAME }}/mes-models
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install runner deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install kaggle jupytext typer rich python-dotenv huggingface_hub
+
+      - name: Configure Kaggle CLI auth
+        run: |
+          mkdir -p ~/.kaggle
+          echo "$KAGGLE_API_TOKEN" > ~/.kaggle/access_token
+          chmod 600 ~/.kaggle/access_token
+
+      - name: Run chained Kaggle pipeline
+        env:
+          SKIP_PREPROCESS: ${{ github.event.inputs.skip_preprocess }}
+          SKIP_RIEMANNIAN: ${{ github.event.inputs.skip_riemannian }}
+          SKIP_EEGNET:     ${{ github.event.inputs.skip_eegnet }}
+          SKIP_VALIDATE:   ${{ github.event.inputs.skip_validate }}
+        run: |
+          set -u
+          KAGGLE_CLI="$(which kaggle)"
+          SUBMIT="python scripts/kaggle_submit.py"
+
+          ts() { date "+%Y-%m-%d %H:%M:%S"; }
+          poll() {
+            local kid="$1" max_min="${2:-300}" start=$(date +%s) status
+            while :; do
+              status=$("$KAGGLE_CLI" kernels status "$kid" 2>&1 | tail -1)
+              echo "::group::[$(ts)] $kid"
+              echo "$status"
+              echo "::endgroup::"
+              case "$status" in
+                *COMPLETE*|*SUCCESS*) return 0 ;;
+                *ERROR*|*FAILED*|*CANCEL*) echo "::error::$kid -> $status"; return 2 ;;
+              esac
+              local now=$(date +%s)
+              if (( (now-start)/60 >= max_min )); then echo "::error::poll timeout $max_min m"; return 3; fi
+              sleep 60
+            done
+          }
+          submit() {
+            local src="$1" kid="$2" extra="$3"
+            echo "[$(ts)] submit $kid"
+            KAGGLE_CLI="$KAGGLE_CLI" $SUBMIT "$src" --kernel-id "$kid" $extra --no-poll
+          }
+
+          if [ "${SKIP_PREPROCESS:-false}" != "true" ]; then
+            submit notebooks/kaggle/00_preprocess.py abachu2005/mes-00-preprocess "--no-gpu --internet"
+            poll abachu2005/mes-00-preprocess 90 || exit 1
+          fi
+
+          if [ "${SKIP_RIEMANNIAN:-false}" != "true" ]; then
+            submit notebooks/kaggle/01_train_riemannian.py abachu2005/mes-01-train-riemannian "--no-gpu --internet"
+            poll abachu2005/mes-01-train-riemannian 90 || echo "riemannian failed - continuing"
+          fi
+
+          if [ "${SKIP_EEGNET:-false}" != "true" ]; then
+            submit notebooks/kaggle/02_train_eegnet.py abachu2005/mes-02-train-eegnet "--gpu --internet"
+            poll abachu2005/mes-02-train-eegnet 240 || echo "eegnet failed - continuing"
+          fi
+
+          if [ "${SKIP_VALIDATE:-false}" != "true" ]; then
+            submit notebooks/kaggle/03_validate.py abachu2005/mes-03-validate "--no-gpu --internet"
+            poll abachu2005/mes-03-validate 60 || echo "validate failed"
+          fi
+
+          echo "::notice::Kaggle chain complete. Models: https://huggingface.co/abachu2005/mes-models"
