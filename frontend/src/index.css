@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  html, body, #root { height: 100%; }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-2xl shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 focus:ring-offset-white dark:focus:ring-offset-ink-900 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800 shadow-card hover:shadow-card-hover;
+  }
+  .btn-secondary {
+    @apply btn bg-ink-100 dark:bg-ink-700 text-ink-900 dark:text-ink-100 hover:bg-ink-200 dark:hover:bg-ink-600;
+  }
+  .btn-ghost {
+    @apply btn text-ink-700 dark:text-ink-200 hover:bg-ink-100 dark:hover:bg-ink-700;
+  }
+  .input {
+    @apply w-full bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-lg px-3 py-2 text-sm placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .pill-info  { @apply pill bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-200; }
+  .pill-warn  { @apply pill bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200; }
+  .pill-good  { @apply pill bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200; }
+  .pill-bad   { @apply pill bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200; }
+  .pill-muted { @apply pill bg-ink-100 text-ink-600 dark:bg-ink-700 dark:text-ink-300; }
+}
