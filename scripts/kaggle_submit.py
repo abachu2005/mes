@@ -68,45 +68,13 @@ def _env_for_kaggle() -> dict[str, str]:
 
 
 def _render_notebook(py_path: Path) -> Path:
-    """Convert a jupytext .py script to .ipynb in a sibling build/ dir.
-
-    Substitutes ``{{HF_TOKEN}}`` and ``{{HF_USERNAME}}`` placeholders from env
-    so the notebook ships with credentials embedded (Kaggle has no programmatic
-    secrets API; private kernels keep these scoped to the owning account).
-    """
+    """Convert a jupytext .py script to .ipynb in a sibling build/ dir."""
     import jupytext  # type: ignore[import-untyped]
 
     build = py_path.parent / "build"
     build.mkdir(exist_ok=True)
-    src = py_path.read_text()
-    hf_tok = os.environ.get("HF_TOKEN", "")
-    hf_user = os.environ.get("HF_USERNAME", "abachu2005")
-    hf_ds = os.environ.get("HF_DATASET_REPO", f"{hf_user}/mes-eeg-processed")
-    hf_mdl = os.environ.get("HF_MODEL_REPO", f"{hf_user}/mes-models")
-    rendered = (
-        src.replace("{{HF_TOKEN}}", hf_tok)
-           .replace("{{HF_USERNAME}}", hf_user)
-           .replace("{{HF_DATASET_REPO}}", hf_ds)
-           .replace("{{HF_MODEL_REPO}}", hf_mdl)
-    )
-    # Make sure the embedded env-set is present so the kernel works without
-    # external secrets configuration.
-    inject = (
-        f"\nimport os\n"
-        f"os.environ.setdefault('HF_TOKEN', '{hf_tok}')\n"
-        f"os.environ.setdefault('HF_USERNAME', '{hf_user}')\n"
-        f"os.environ.setdefault('HF_DATASET_REPO', '{hf_ds}')\n"
-        f"os.environ.setdefault('HF_MODEL_REPO', '{hf_mdl}')\n"
-    )
-    # Insert injection right after the first import-os line if not already present.
-    if "os.environ.setdefault('HF_TOKEN'" not in rendered:
-        rendered = inject + rendered
-
-    tmp_py = build / (py_path.stem + "._build.py")
-    tmp_py.write_text(rendered)
     nb_path = build / (py_path.stem + ".ipynb")
-    nb = jupytext.read(str(tmp_py))
-    # Ensure a kernelspec is present so papermill (Kaggle) doesn't refuse to run.
+    nb = jupytext.read(str(py_path))
     nb.metadata.setdefault("kernelspec", {})
     nb.metadata["kernelspec"].update({
         "display_name": "Python 3",
@@ -116,7 +84,6 @@ def _render_notebook(py_path: Path) -> Path:
     nb.metadata.setdefault("language_info", {})
     nb.metadata["language_info"].update({"name": "python"})
     jupytext.write(nb, str(nb_path), fmt="ipynb")
-    tmp_py.unlink()
     return nb_path
 
 
@@ -127,6 +94,7 @@ def _write_metadata(
     enable_gpu: bool,
     enable_internet: bool,
     secrets: list[str],
+    kernel_sources: list[str],
 ) -> Path:
     meta = {
         "id": kernel_id,
@@ -140,9 +108,8 @@ def _write_metadata(
         "enable_internet": enable_internet,
         "dataset_sources": [],
         "competition_sources": [],
-        "kernel_sources": [],
+        "kernel_sources": kernel_sources,
         "model_sources": [],
-        "keywords": ["mes", "eeg", "motor-imagery"],
     }
     # The kaggle CLI looks for kernel-metadata.json in the same folder as code_file.
     meta_path = nb_path.parent / "kernel-metadata.json"
@@ -157,6 +124,7 @@ def push(
     gpu: bool = typer.Option(False, help="Request a GPU"),
     internet: bool = typer.Option(True, help="Enable internet"),
     secret: list[str] = typer.Option([], help="Secret names already configured on Kaggle"),
+    kernel_source: list[str] = typer.Option([], "--kernel-source", help="Upstream kernel slug(s)"),
     poll: bool = typer.Option(True, help="Poll until completion"),
     poll_interval_s: int = typer.Option(60, help="Poll interval"),
     poll_timeout_min: int = typer.Option(360, help="Max minutes to poll"),
@@ -168,6 +136,7 @@ def push(
     _write_metadata(
         nb_path, kernel_id,
         enable_gpu=gpu, enable_internet=internet, secrets=secret,
+        kernel_sources=kernel_source,
     )
 
     console.print(f"[bold]Pushing[/] {kernel_id} from {nb_path}")

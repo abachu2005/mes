@@ -15,9 +15,10 @@
 
 # # MES — 02_train_eegnet
 #
-# Trains EEGNet v4 via braindecode on the processed parquet data, exports to
-# ONNX, and pushes to the HF model repo.
+# Trains EEGNet v4 on processed parquet from chained preprocess kernel.
+# Writes ONNX to /kaggle/working/. GitHub Actions uploads to HF.
 # Runs on Kaggle GPU (P100). ~2-4 hours.
+# Requires kernel_sources: abachu2005/mes-00-preprocess
 
 # +
 import os, json
@@ -31,44 +32,40 @@ def _pip(pkgs):
             return
     raise RuntimeError(f"pip failed: {pkgs}")
 
-_pip("'huggingface_hub>=0.24' pyarrow pandas onnx onnxruntime")
+_pip("pyarrow pandas onnx onnxruntime")
 _pip("'braindecode>=0.8'")
 # -
 
 # +
-import time
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import GroupKFold
-from huggingface_hub import HfApi, snapshot_download, login
+from pathlib import Path
 
-HF_TOKEN = os.environ["HF_TOKEN"]
-HF_USER  = os.environ.get("HF_USERNAME", "abachu2005")
-HF_DATASET_REPO = os.environ.get("HF_DATASET_REPO", f"{HF_USER}/mes-eeg-processed")
-HF_MODEL_REPO   = os.environ.get("HF_MODEL_REPO",   f"{HF_USER}/mes-models")
+def find_parquet_dir():
+    inp = Path("/kaggle/input")
+    if inp.exists():
+        for sub in sorted(inp.iterdir()):
+            proc = sub / "processed"
+            if proc.is_dir() and list(proc.glob("*.parquet")):
+                return proc
+            if list(sub.glob("physionet_*.parquet")):
+                return sub
+    local = Path("/kaggle/working/processed")
+    if local.is_dir() and list(local.glob("*.parquet")):
+        return local
+    raise FileNotFoundError("No processed parquet — attach mes-00-preprocess kernel source")
 
-def _retry(fn, what, tries=8, sleep_s=15):
-    for i in range(tries):
-        try: return fn()
-        except Exception as e:
-            print(f"  HF {what} attempt {i+1}/{tries} failed: {e}")
-            time.sleep(sleep_s)
-    raise RuntimeError(f"HF {what} failed after {tries} retries")
-
-_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
-api = HfApi(token=HF_TOKEN)
+OUT = Path("/kaggle/working")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("device:", device)
-# -
 
-# +
-ds_dir = Path(_retry(lambda: snapshot_download(repo_id=HF_DATASET_REPO,
-                                                 repo_type="dataset", token=HF_TOKEN),
-                      "snapshot_download", 10, 20))
+ds_dir = find_parquet_dir()
 files = sorted(ds_dir.glob("*.parquet"))
+print(f"Data dir: {ds_dir}  ({len(files)} parquet files)")
 
 TARGET_T = 750  # 6 s @ 125 Hz
 N_CH = 16
@@ -161,7 +158,7 @@ for ep in range(80):
 
 final_model.eval()
 dummy = torch.zeros(1, N_CH, TARGET_T, dtype=torch.float32, device=device)
-out_path = Path("eegnet_right_hand.onnx")
+out_path = OUT / "eegnet_right_hand.onnx"
 torch.onnx.export(
     final_model, dummy, str(out_path),
     input_names=["X"], output_names=["proba"],
@@ -178,11 +175,6 @@ meta = {
     "fold_accs": [float(a) for a in fold_accs],
     "n_train": int(X.shape[0]),
 }
-Path("eegnet_right_hand.json").write_text(json.dumps(meta, indent=2))
-
-_retry(lambda: api.upload_file(path_or_fileobj=str(out_path), path_in_repo=out_path.name,
-                repo_id=HF_MODEL_REPO, commit_message="eegnet v0.1"), "upload onnx", 10, 20)
-_retry(lambda: api.upload_file(path_or_fileobj="eegnet_right_hand.json", path_in_repo="eegnet_right_hand.json",
-                repo_id=HF_MODEL_REPO, commit_message="eegnet meta"), "upload meta", 10, 20)
-print("DONE — pushed to", HF_MODEL_REPO)
+Path(OUT / "eegnet_right_hand.json").write_text(json.dumps(meta, indent=2))
+print("DONE — wrote to", OUT, "(GitHub Actions uploads to HF)")
 # -

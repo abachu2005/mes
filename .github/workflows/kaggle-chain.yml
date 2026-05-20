@@ -1,13 +1,13 @@
 name: kaggle-chain
 
-# Runs the full Kaggle pipeline (preprocess -> train_riemannian -> train_eegnet -> validate)
-# entirely on GitHub-hosted runners, polling Kaggle from there. Safe to close laptop.
+# Kaggle = compute only (/kaggle/working). GitHub Actions pulls output and syncs to HF.
+# Safe to close laptop — runs entirely on GitHub-hosted runners.
 
 on:
   workflow_dispatch:
     inputs:
       skip_preprocess:
-        description: "Skip preprocess (re-use existing HF dataset)"
+        description: "Skip preprocess (reuse latest mes-00-preprocess kernel output)"
         required: false
         default: "false"
       skip_riemannian:
@@ -26,12 +26,14 @@ on:
 jobs:
   chain:
     runs-on: ubuntu-latest
-    timeout-minutes: 350   # GitHub hard caps job at 360 min; leave 10 min buffer
+    timeout-minutes: 350
+    permissions:
+      contents: write
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }}
       HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
-      HF_MODEL_REPO:   ${{ secrets.HF_USERNAME }}/mes-models
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
       KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +41,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+
       - name: Install runner deps
         run: |
           python -m pip install --upgrade pip
@@ -50,18 +53,21 @@ jobs:
           echo "$KAGGLE_API_TOKEN" > ~/.kaggle/access_token
           chmod 600 ~/.kaggle/access_token
 
-      - name: Run chained Kaggle pipeline
+      - name: Run chained Kaggle pipeline + HF sync
         env:
           SKIP_PREPROCESS: ${{ github.event.inputs.skip_preprocess }}
           SKIP_RIEMANNIAN: ${{ github.event.inputs.skip_riemannian }}
-          SKIP_EEGNET:     ${{ github.event.inputs.skip_eegnet }}
-          SKIP_VALIDATE:   ${{ github.event.inputs.skip_validate }}
+          SKIP_EEGNET: ${{ github.event.inputs.skip_eegnet }}
+          SKIP_VALIDATE: ${{ github.event.inputs.skip_validate }}
         run: |
-          set -u
+          set -euo pipefail
           KAGGLE_CLI="$(which kaggle)"
           SUBMIT="python scripts/kaggle_submit.py"
+          HF_SYNC="python scripts/hf_sync.py"
+          OUT_ROOT="/tmp/kaggle-out"
 
           ts() { date "+%Y-%m-%d %H:%M:%S"; }
+
           poll() {
             local kid="$1" max_min="${2:-300}" start=$(date +%s) status
             while :; do
@@ -74,34 +80,129 @@ jobs:
                 *ERROR*|*FAILED*|*CANCEL*) echo "::error::$kid -> $status"; return 2 ;;
               esac
               local now=$(date +%s)
-              if (( (now-start)/60 >= max_min )); then echo "::error::poll timeout $max_min m"; return 3; fi
+              if (( (now-start)/60 >= max_min )); then echo "::error::poll timeout ${max_min}m for $kid"; return 3; fi
               sleep 60
             done
           }
+
+          pull_output() {
+            local kid="$1"
+            local slug="${kid##*/}"
+            local dest="${OUT_ROOT}/${slug}"
+            rm -rf "$dest"
+            mkdir -p "$dest"
+            echo "[$(ts)] pull output $kid -> $dest"
+            "$KAGGLE_CLI" kernels output "$kid" -p "$dest"
+            echo "Contents:"
+            find "$dest" -maxdepth 3 -type f | head -40
+          }
+
           submit() {
             local src="$1" kid="$2" extra="$3"
             echo "[$(ts)] submit $kid"
             KAGGLE_CLI="$KAGGLE_CLI" $SUBMIT "$src" --kernel-id "$kid" $extra --no-poll
           }
 
+          sync_dataset() {
+            local kid="$1"
+            pull_output "$kid"
+            local slug="${kid##*/}"
+            $HF_SYNC \
+              --local-dir "${OUT_ROOT}/${slug}" \
+              --repo-id "$HF_DATASET_REPO" \
+              --repo-type dataset \
+              --subdir processed \
+              --message "sync ${slug} processed parquet"
+          }
+
+          sync_models() {
+            local kid="$1"
+            pull_output "$kid"
+            local slug="${kid##*/}"
+            local dir="${OUT_ROOT}/${slug}"
+            for pat in "*.onnx" "*.json" "*.npz"; do
+              if find "$dir" -name "${pat#\*}" -print -quit | grep -q .; then
+                $HF_SYNC \
+                  --local-dir "$dir" \
+                  --repo-id "$HF_MODEL_REPO" \
+                  --repo-type model \
+                  --pattern "$pat" \
+                  --message "sync ${slug} ${pat}" || echo "::warning::sync ${pat} failed"
+              fi
+            done
+          }
+
+          sync_benchmarks() {
+            local kid="$1"
+            pull_output "$kid"
+            local slug="${kid##*/}"
+            local dir="${OUT_ROOT}/${slug}"
+            for f in benchmarks.md benchmarks.json; do
+              if [ -f "${dir}/${f}" ] || find "$dir" -name "$f" -print -quit | grep -q .; then
+                $HF_SYNC \
+                  --local-dir "$dir" \
+                  --repo-id "$HF_MODEL_REPO" \
+                  --repo-type model \
+                  --pattern "$f" \
+                  --message "sync ${slug} ${f}"
+              fi
+            done
+            local md
+            md=$(find "$dir" -name benchmarks.md -print -quit)
+            if [ -n "$md" ]; then
+              cp "$md" docs/benchmarks.md
+              echo "[$(ts)] copied benchmarks -> docs/benchmarks.md"
+            fi
+          }
+
+          PREPROCESS_ID="abachu2005/mes-00-preprocess"
+          RIEMANN_ID="abachu2005/mes-01-train-riemannian"
+          EEGNET_ID="abachu2005/mes-02-train-eegnet"
+          VALIDATE_ID="abachu2005/mes-03-validate"
+
           if [ "${SKIP_PREPROCESS:-false}" != "true" ]; then
-            submit notebooks/kaggle/00_preprocess.py abachu2005/mes-00-preprocess "--no-gpu --internet"
-            poll abachu2005/mes-00-preprocess 90 || exit 1
+            submit notebooks/kaggle/00_preprocess.py "$PREPROCESS_ID" "--no-gpu --internet"
+            poll "$PREPROCESS_ID" 90
+            sync_dataset "$PREPROCESS_ID"
+          else
+            echo "[$(ts)] skip preprocess"
           fi
 
           if [ "${SKIP_RIEMANNIAN:-false}" != "true" ]; then
-            submit notebooks/kaggle/01_train_riemannian.py abachu2005/mes-01-train-riemannian "--no-gpu --internet"
-            poll abachu2005/mes-01-train-riemannian 90 || echo "riemannian failed - continuing"
+            submit notebooks/kaggle/01_train_riemannian.py "$RIEMANN_ID" \
+              "--no-gpu --internet --kernel-source ${PREPROCESS_ID}"
+            poll "$RIEMANN_ID" 90 || echo "::warning::riemannian failed - continuing"
+            sync_models "$RIEMANN_ID" || echo "::warning::riemannian HF sync failed"
           fi
 
           if [ "${SKIP_EEGNET:-false}" != "true" ]; then
-            submit notebooks/kaggle/02_train_eegnet.py abachu2005/mes-02-train-eegnet "--gpu --internet"
-            poll abachu2005/mes-02-train-eegnet 240 || echo "eegnet failed - continuing"
+            submit notebooks/kaggle/02_train_eegnet.py "$EEGNET_ID" \
+              "--gpu --internet --kernel-source ${PREPROCESS_ID}"
+            poll "$EEGNET_ID" 240 || echo "::warning::eegnet failed - continuing"
+            sync_models "$EEGNET_ID"
           fi
 
           if [ "${SKIP_VALIDATE:-false}" != "true" ]; then
-            submit notebooks/kaggle/03_validate.py abachu2005/mes-03-validate "--no-gpu --internet"
-            poll abachu2005/mes-03-validate 60 || echo "validate failed"
+            VAL_EXTRA="--no-gpu --internet --kernel-source ${PREPROCESS_ID} --kernel-source ${RIEMANN_ID}"
+            if [ "${SKIP_EEGNET:-false}" != "true" ]; then
+              VAL_EXTRA="$VAL_EXTRA --kernel-source ${EEGNET_ID}"
+            fi
+            submit notebooks/kaggle/03_validate.py "$VALIDATE_ID" "$VAL_EXTRA"
+            poll "$VALIDATE_ID" 60 || echo "::warning::validate failed"
+            sync_benchmarks "$VALIDATE_ID"
           fi
 
-          echo "::notice::Kaggle chain complete. Models: https://huggingface.co/abachu2005/mes-models"
+          echo "::notice::Kaggle chain complete. Dataset: https://huggingface.co/datasets/${HF_DATASET_REPO}"
+          echo "::notice::Models: https://huggingface.co/${HF_MODEL_REPO}"
+
+      - name: Commit benchmarks doc (if updated)
+        run: |
+          if git diff --quiet docs/benchmarks.md 2>/dev/null; then
+            echo "No benchmarks change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/benchmarks.md
+          git commit -m "docs: update benchmarks from kaggle validate"
+          git push

@@ -15,9 +15,10 @@
 
 # # MES — 01_train_riemannian
 #
-# Trains a Riemannian + Logistic Regression baseline on the processed parquet
-# data from HF, exports to ONNX, and pushes to the HF model repo.
+# Trains Riemannian + Logistic Regression on processed parquet from chained
+# preprocess kernel. Writes ONNX to /kaggle/working/. GitHub Actions uploads to HF.
 # Runs on Kaggle CPU. ~30-60 min.
+# Requires kernel_sources: abachu2005/mes-00-preprocess
 
 # +
 import os, json, io
@@ -31,42 +32,34 @@ def _pip(pkgs):
             return
     raise RuntimeError(f"pip failed: {pkgs}")
 
-_pip("'huggingface_hub>=0.24' pyarrow pandas onnx onnxruntime")
-_pip("scikit-learn")
+_pip("pyarrow pandas onnx onnxruntime scikit-learn")
 _pip("pyriemann")
 _pip("skl2onnx")
 # -
 
 # +
-import time
 import numpy as np
 import pandas as pd
-from huggingface_hub import HfApi, snapshot_download, login
+from pathlib import Path
 
-HF_TOKEN = os.environ["HF_TOKEN"]
-HF_USER  = os.environ.get("HF_USERNAME", "abachu2005")
-HF_DATASET_REPO = os.environ.get("HF_DATASET_REPO", f"{HF_USER}/mes-eeg-processed")
-HF_MODEL_REPO   = os.environ.get("HF_MODEL_REPO",   f"{HF_USER}/mes-models")
+def find_parquet_dir():
+    inp = Path("/kaggle/input")
+    if inp.exists():
+        for sub in sorted(inp.iterdir()):
+            proc = sub / "processed"
+            if proc.is_dir() and list(proc.glob("*.parquet")):
+                return proc
+            if list(sub.glob("physionet_*.parquet")):
+                return sub
+    local = Path("/kaggle/working/processed")
+    if local.is_dir() and list(local.glob("*.parquet")):
+        return local
+    raise FileNotFoundError("No processed parquet — attach mes-00-preprocess kernel source")
 
-def _retry(fn, what, tries=8, sleep_s=15):
-    for i in range(tries):
-        try: return fn()
-        except Exception as e:
-            print(f"  HF {what} attempt {i+1}/{tries} failed: {e}")
-            time.sleep(sleep_s)
-    raise RuntimeError(f"HF {what} failed after {tries} retries")
-
-_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
-api = HfApi(token=HF_TOKEN)
-_retry(lambda: api.create_repo(repo_id=HF_MODEL_REPO, exist_ok=True), "create_repo")
-# -
-
-# +
-ds_dir = Path(_retry(lambda: snapshot_download(repo_id=HF_DATASET_REPO,
-                                                 repo_type="dataset", token=HF_TOKEN),
-                      "snapshot_download", tries=10, sleep_s=20))
+OUT = Path("/kaggle/working")
+ds_dir = find_parquet_dir()
 files = sorted(ds_dir.glob("*.parquet"))
-print(f"Found {len(files)} parquet files")
+print(f"Data dir: {ds_dir}  ({len(files)} parquet files)")
 
 def load_subset(prefix, label_pairs):
     """Load all parquets whose name starts with `prefix`; keep only labels in `label_pairs`."""
@@ -152,13 +145,6 @@ post_pipe = Pipeline([("lr", LogisticRegression(C=1.0, max_iter=1000))])
 post_pipe.fit(ts_X, y)
 final_post = CalibratedClassifierCV(post_pipe, method="sigmoid", cv=3).fit(ts_X, y)
 
-# Save covariance + tangent space transformers as a numpy bundle.
-np.savez(
-    "rieman_frontend.npz",
-    cov_estimator=np.array([cov_tr.estimator_], dtype=object),
-    ts_reference=ts.reference_,
-)
-
 from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType
 onx = to_onnx(
@@ -167,7 +153,7 @@ onx = to_onnx(
     target_opset={"": 17, "ai.onnx.ml": 3},
     options={id(final_post): {"zipmap": False}},
 )
-out_path = Path("riemannian_lr_right_hand.onnx")
+out_path = OUT / "riemannian_lr_right_hand.onnx"
 out_path.write_bytes(onx.SerializeToString())
 
 meta = {
@@ -182,23 +168,10 @@ meta = {
     "sfreq": 125.0,
     "epoch_samples": int(X.shape[2]),
 }
-Path("riemannian_lr_right_hand.json").write_text(json.dumps(meta, indent=2))
-print("ONNX written, meta:", meta)
-# -
-
-# +
-# Push to HF model repo.
-_retry(lambda: api.upload_file(path_or_fileobj=str(out_path),
-                path_in_repo=out_path.name,
-                repo_id=HF_MODEL_REPO,
-                commit_message="riemannian baseline v0.1"), "upload onnx", 10, 20)
-_retry(lambda: api.upload_file(path_or_fileobj="riemannian_lr_right_hand.json",
-                path_in_repo="riemannian_lr_right_hand.json",
-                repo_id=HF_MODEL_REPO,
-                commit_message="riemannian baseline meta"), "upload meta", 10, 20)
-_retry(lambda: api.upload_file(path_or_fileobj="rieman_frontend.npz",
-                path_in_repo="riemannian_lr_frontend.npz",
-                repo_id=HF_MODEL_REPO,
-                commit_message="riemannian frontend (cov+ts)"), "upload frontend", 10, 20)
-print("DONE — pushed to", HF_MODEL_REPO)
+Path(OUT / "riemannian_lr_right_hand.json").write_text(json.dumps(meta, indent=2))
+np.savez(str(OUT / "riemannian_lr_frontend.npz"),
+         cov_estimator=np.array([cov_tr.estimator_], dtype=object),
+         ts_reference=ts.reference_)
+print("ONNX written to", OUT, "meta:", meta)
+print("DONE — GitHub Actions uploads to HF model repo")
 # -

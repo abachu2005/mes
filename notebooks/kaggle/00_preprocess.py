@@ -15,10 +15,11 @@
 
 # # MES — 00_preprocess
 #
-# Downloads MOABB datasets, preprocesses to the 16-channel OpenBCI montage @ 125 Hz,
-# writes per-dataset parquet, and uploads to the HF dataset repo.
+# Downloads PhysioNet eegmmidb via mne, preprocesses to 16-ch OpenBCI @ 125 Hz,
+# writes parquet to /kaggle/working/processed/.
 #
-# Runs on Kaggle CPU. Internet required. HF_TOKEN must be set as a Kaggle secret.
+# NO Hugging Face calls — GitHub Actions pulls output and uploads to HF.
+# Runs on Kaggle CPU with internet. ~30-45 min.
 
 # +
 import os, sys, json, gc, shutil
@@ -36,47 +37,17 @@ def _pip(pkgs):
             return
     raise RuntimeError(f"pip failed: {pkgs}")
 
-_pip("'huggingface_hub>=0.24' pyarrow pandas scipy")
+_pip("pyarrow pandas scipy")
 _pip("mne")
-# NOTE: skip moabb + mne-icalabel + autoreject - Kaggle's network blocks these.
-# We use mne.datasets.eegbci directly for PhysioNet; ICA fallback uses kurtosis.
+# NOTE: no moabb / huggingface_hub — Kaggle DNS blocks some PyPI packages and all HF.
 # -
 
 # +
-HF_TOKEN = os.environ["HF_TOKEN"]
-HF_USER  = os.environ.get("HF_USERNAME", "abachu2005")
-HF_DATASET_REPO = os.environ.get("HF_DATASET_REPO", f"{HF_USER}/mes-eeg-processed")
-assert HF_TOKEN.startswith("hf_"), "HF_TOKEN missing or malformed"
-# -
-
-# +
-import time
 import numpy as np
 import pandas as pd
 import mne
 mne.set_log_level("ERROR")
-from huggingface_hub import HfApi, create_repo, login
-
-def _retry(fn, what, tries=8, sleep_s=15):
-    last = None
-    for i in range(tries):
-        try:
-            return fn()
-        except Exception as e:
-            last = e
-            print(f"  HF {what} attempt {i+1}/{tries} failed: {type(e).__name__}: {e}")
-            time.sleep(sleep_s)
-    raise RuntimeError(f"HF {what} failed after {tries} retries: {last}")
-
-_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
-api = HfApi(token=HF_TOKEN)
-_retry(lambda: create_repo(repo_id=HF_DATASET_REPO, repo_type="dataset",
-                            exist_ok=True, token=HF_TOKEN),
-        "create_repo")
 # -
-
-# +
-# Inline the channel constants + preprocessing helpers so the notebook is self-contained.
 OPENBCI_MONTAGE_16 = (
     "Fpz","Fz","FC3","FCz","FC4","C3","C1","Cz","C2","C4",
     "CP3","CPz","CP4","T7","T8","Pz",
@@ -271,13 +242,13 @@ for sid in range(1, N_SUBJECTS + 1):
 # -
 
 # +
-# Upload processed parquet to HF dataset repo (with retries).
-print("Uploading to", HF_DATASET_REPO)
-_retry(lambda: api.upload_folder(
-    folder_path=str(OUT),
-    repo_id=HF_DATASET_REPO,
-    repo_type="dataset",
-    commit_message="kaggle 00_preprocess publish",
-), "upload_folder", tries=10, sleep_s=20)
-print("DONE")
+# Write manifest so GitHub Actions can verify output.
+manifest = {
+    "stage": "preprocess",
+    "n_parquet": len(list(OUT.glob("*.parquet"))),
+    "files": sorted(p.name for p in OUT.glob("*.parquet")),
+}
+Path("/kaggle/working/manifest.json").write_text(json.dumps(manifest, indent=2))
+print("Wrote", manifest["n_parquet"], "parquet files to", OUT)
+print("DONE — output in /kaggle/working/processed (GitHub Actions uploads to HF)")
 # -
