@@ -69,6 +69,36 @@ smoke:
 smoke-prod:
 	curl -fsS https://huggingface.co/spaces/abachu2005/mes/healthz || echo "Space sleeping or down"
 
+# ---------- Kaggle (cloud compute) ----------
+
+KAGGLE_CLI := $(shell pwd)/.venv/bin/kaggle
+KSUBMIT := $(PYTHON) scripts/kaggle_submit.py
+
+kaggle-preprocess:
+	@set -a; . ./.env.local; set +a; KAGGLE_CLI=$(KAGGLE_CLI) \
+	  $(KSUBMIT) notebooks/kaggle/00_preprocess.py \
+	  --kernel-id $$HF_USERNAME/mes-00-preprocess --no-gpu --internet --poll
+
+kaggle-train-riemannian:
+	@set -a; . ./.env.local; set +a; KAGGLE_CLI=$(KAGGLE_CLI) \
+	  $(KSUBMIT) notebooks/kaggle/01_train_riemannian.py \
+	  --kernel-id $$HF_USERNAME/mes-01-train-riemannian --no-gpu --internet --poll
+
+kaggle-train-eegnet:
+	@set -a; . ./.env.local; set +a; KAGGLE_CLI=$(KAGGLE_CLI) \
+	  $(KSUBMIT) notebooks/kaggle/02_train_eegnet.py \
+	  --kernel-id $$HF_USERNAME/mes-02-train-eegnet --gpu --internet --poll
+
+kaggle-validate:
+	@set -a; . ./.env.local; set +a; KAGGLE_CLI=$(KAGGLE_CLI) \
+	  $(KSUBMIT) notebooks/kaggle/03_validate.py \
+	  --kernel-id $$HF_USERNAME/mes-03-validate --no-gpu --internet --poll
+
+# ---------- HF Space deploy ----------
+
+hf-deploy:
+	@set -a; . ./.env.local; set +a; $(PYTHON) scripts/hf_deploy.py
+
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
 	find . -type d -name __pycache__ -exec rm -rf {} +

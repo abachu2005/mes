@@ -38,7 +38,6 @@ def _pip(pkgs):
 
 _pip("'huggingface_hub>=0.24' pyarrow pandas scipy")
 _pip("mne")
-_pip("pyriemann")
 _pip("moabb")
 _pip("mne-icalabel autoreject")
 # -

@@ -24,8 +24,15 @@ import os, json
 from pathlib import Path
 
 os.system("pip install -q --upgrade pip")
-os.system("pip install -q numpy scipy scikit-learn 'huggingface_hub>=0.24' pyarrow pandas onnx onnxruntime")
-os.system("pip install -q 'torch>=2.2' 'braindecode>=0.8'")
+
+def _pip(pkgs):
+    for _ in range(5):
+        if os.system("pip install -q --default-timeout=60 --retries 5 " + pkgs) == 0:
+            return
+    raise RuntimeError(f"pip failed: {pkgs}")
+
+_pip("'huggingface_hub>=0.24' pyarrow pandas onnx onnxruntime")
+_pip("'braindecode>=0.8'")
 # -
 
 # +

@@ -23,7 +23,15 @@ import os, json, io
 from pathlib import Path
 
 os.system("pip install -q --upgrade pip")
-os.system("pip install -q numpy scipy scikit-learn pyriemann 'huggingface_hub>=0.24' onnxruntime pandas")
+
+def _pip(pkgs):
+    for _ in range(5):
+        if os.system("pip install -q --default-timeout=60 --retries 5 " + pkgs) == 0:
+            return
+    raise RuntimeError(f"pip failed: {pkgs}")
+
+_pip("'huggingface_hub>=0.24' onnxruntime pandas scikit-learn")
+_pip("pyriemann")
 # -
 
 # +

@@ -1,0 +1,49 @@
+site_name: MES — Motor Engagement Signal
+site_description: Quantifying neural drive for movement recovery from EEG.
+site_url: https://abachu2005.github.io/mes/
+repo_url: https://github.com/abachu2005/mes
+repo_name: abachu2005/mes
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: indigo
+      toggle: { icon: material/weather-sunny, name: Switch to dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: indigo
+      toggle: { icon: material/weather-night, name: Switch to light mode }
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.expand
+    - content.code.copy
+    - content.tabs.link
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed: { alternate_style: true }
+  - pymdownx.arithmatex: { generic: true }
+
+nav:
+  - Home: index.md
+  - Methods:
+    - Pipeline overview: methods/pipeline.md
+    - MES formula: methods/mes-formula.md
+    - Validation: methods/validation.md
+  - Clinical interpretation: clinical.md
+  - Hardware SOP: hardware.md
+  - Benchmarks: benchmarks.md
+  - API reference: api.md
+  - Limitations: limitations.md
