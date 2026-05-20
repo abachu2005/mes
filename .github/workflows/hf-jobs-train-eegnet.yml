@@ -1,0 +1,81 @@
+name: hf-jobs-train-eegnet
+
+# Trains EEGNet on Hugging Face Jobs (A10G GPU, ~1–2 h, no Kaggle queue).
+# Requires HF Pro + credits. Needs mes-eeg-processed on HF Hub first.
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: "HF Jobs hardware flavor"
+        required: false
+        default: a10g-small
+      timeout:
+        description: "Job timeout (e.g. 3h)"
+        required: false
+        default: 3h
+  workflow_run:
+    workflows: [kaggle-chain]
+    types: [completed]
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 210
+    # Only auto-run after kaggle-chain when that workflow succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success')
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Hugging Face CLI
+        run: pip install --upgrade 'huggingface_hub[cli]>=0.26'
+
+      - name: Preflight — processed dataset on Hub
+        run: |
+          python <<'PY'
+          import os, sys
+          from huggingface_hub import HfApi
+          repo = os.environ["HF_DATASET_REPO"]
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          try:
+              files = api.list_repo_files(repo, repo_type="dataset")
+          except Exception as e:
+              print(f"Dataset repo missing or inaccessible: {e}", file=sys.stderr)
+              sys.exit(1)
+          parquet = [f for f in files if f.endswith(".parquet")]
+          if not parquet:
+              print(f"No parquet in {repo} — run kaggle-chain preprocess first", file=sys.stderr)
+              sys.exit(1)
+          print(f"OK: {len(parquet)} parquet file(s) in {repo}")
+          PY
+
+      - name: Submit EEGNet training job (HF Jobs)
+        run: |
+          set -euo pipefail
+          FLAVOR="${{ github.event.inputs.flavor || 'a10g-small' }}"
+          TIMEOUT="${{ github.event.inputs.timeout || '3h' }}"
+          echo "Submitting HF Job: flavor=$FLAVOR timeout=$TIMEOUT"
+          hf jobs uv run scripts/hf_jobs_train_eegnet.py \
+            --flavor "$FLAVOR" \
+            --timeout "$TIMEOUT" \
+            --secrets HF_TOKEN \
+            -e HF_DATASET_REPO="$HF_DATASET_REPO" \
+            -e HF_MODEL_REPO="$HF_MODEL_REPO" \
+            -e HF_USERNAME="$HF_USERNAME" \
+            -l mes=eegnet \
+            -l source=hf-jobs
+
+      - name: Done
+        run: |
+          echo "::notice::EEGNet model published to https://huggingface.co/${HF_MODEL_REPO}"

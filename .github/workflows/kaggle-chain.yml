@@ -15,9 +15,9 @@ on:
         required: false
         default: "false"
       skip_eegnet:
-        description: "Skip EEGNet training (GPU - slow)"
+        description: "Skip EEGNet on Kaggle (use hf-jobs-train-eegnet workflow instead)"
         required: false
-        default: "false"
+        default: "true"
       skip_validate:
         description: "Skip validation"
         required: false

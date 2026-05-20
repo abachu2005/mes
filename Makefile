@@ -16,7 +16,8 @@ help:
 	@echo "  format          Auto-format with ruff"
 	@echo "  e2e             Build container + run Playwright e2e"
 	@echo "  smoke           Boot backend locally + one round-trip"
-	@echo "  smoke-prod      Ping live HF Space /healthz"
+	@echo "  kaggle-validate  Run validation notebook on Kaggle"
+	@echo "  hf-jobs-eegnet   Train EEGNet on HF Jobs GPU (fast queue, ~\$2)"
 	@echo "  docker-build    Build the HF Space image"
 	@echo "  docker-run      Run image locally on :7860"
 	@echo "  frontend-build  npm build the React app"
@@ -93,6 +94,14 @@ kaggle-validate:
 	@set -a; . ./.env.local; set +a; KAGGLE_CLI=$(KAGGLE_CLI) \
 	  $(KSUBMIT) notebooks/kaggle/03_validate.py \
 	  --kernel-id $$HF_USERNAME/mes-03-validate --no-gpu --internet --poll
+
+hf-jobs-eegnet:
+	@set -a; . ./.env.local; set +a; \
+	  hf jobs uv run scripts/hf_jobs_train_eegnet.py \
+	  --flavor a10g-small --timeout 3h --secrets HF_TOKEN \
+	  -e HF_DATASET_REPO=$$HF_DATASET_REPO \
+	  -e HF_MODEL_REPO=$$HF_MODEL_REPO \
+	  -e HF_USERNAME=$$HF_USERNAME
 
 # ---------- HF Space deploy ----------
 
