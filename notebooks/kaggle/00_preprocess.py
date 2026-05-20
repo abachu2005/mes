@@ -50,14 +50,29 @@ assert HF_TOKEN.startswith("hf_"), "HF_TOKEN missing or malformed"
 # -
 
 # +
+import time
 import numpy as np
 import pandas as pd
 import mne
 mne.set_log_level("ERROR")
 from huggingface_hub import HfApi, create_repo, login
-login(token=HF_TOKEN)
+
+def _retry(fn, what, tries=8, sleep_s=15):
+    last = None
+    for i in range(tries):
+        try:
+            return fn()
+        except Exception as e:
+            last = e
+            print(f"  HF {what} attempt {i+1}/{tries} failed: {type(e).__name__}: {e}")
+            time.sleep(sleep_s)
+    raise RuntimeError(f"HF {what} failed after {tries} retries: {last}")
+
+_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
 api = HfApi(token=HF_TOKEN)
-create_repo(repo_id=HF_DATASET_REPO, repo_type="dataset", exist_ok=True, token=HF_TOKEN)
+_retry(lambda: create_repo(repo_id=HF_DATASET_REPO, repo_type="dataset",
+                            exist_ok=True, token=HF_TOKEN),
+        "create_repo")
 # -
 
 # +
@@ -256,13 +271,13 @@ for sid in range(1, N_SUBJECTS + 1):
 # -
 
 # +
-# Upload processed parquet to HF dataset repo.
+# Upload processed parquet to HF dataset repo (with retries).
 print("Uploading to", HF_DATASET_REPO)
-api.upload_folder(
+_retry(lambda: api.upload_folder(
     folder_path=str(OUT),
     repo_id=HF_DATASET_REPO,
     repo_type="dataset",
     commit_message="kaggle 00_preprocess publish",
-)
+), "upload_folder", tries=10, sleep_s=20)
 print("DONE")
 # -

@@ -38,6 +38,7 @@ _pip("skl2onnx")
 # -
 
 # +
+import time
 import numpy as np
 import pandas as pd
 from huggingface_hub import HfApi, snapshot_download, login
@@ -46,13 +47,24 @@ HF_TOKEN = os.environ["HF_TOKEN"]
 HF_USER  = os.environ.get("HF_USERNAME", "abachu2005")
 HF_DATASET_REPO = os.environ.get("HF_DATASET_REPO", f"{HF_USER}/mes-eeg-processed")
 HF_MODEL_REPO   = os.environ.get("HF_MODEL_REPO",   f"{HF_USER}/mes-models")
-login(token=HF_TOKEN)
+
+def _retry(fn, what, tries=8, sleep_s=15):
+    for i in range(tries):
+        try: return fn()
+        except Exception as e:
+            print(f"  HF {what} attempt {i+1}/{tries} failed: {e}")
+            time.sleep(sleep_s)
+    raise RuntimeError(f"HF {what} failed after {tries} retries")
+
+_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
 api = HfApi(token=HF_TOKEN)
-api.create_repo(repo_id=HF_MODEL_REPO, exist_ok=True)
+_retry(lambda: api.create_repo(repo_id=HF_MODEL_REPO, exist_ok=True), "create_repo")
 # -
 
 # +
-ds_dir = Path(snapshot_download(repo_id=HF_DATASET_REPO, repo_type="dataset", token=HF_TOKEN))
+ds_dir = Path(_retry(lambda: snapshot_download(repo_id=HF_DATASET_REPO,
+                                                 repo_type="dataset", token=HF_TOKEN),
+                      "snapshot_download", tries=10, sleep_s=20))
 files = sorted(ds_dir.glob("*.parquet"))
 print(f"Found {len(files)} parquet files")
 
@@ -176,17 +188,17 @@ print("ONNX written, meta:", meta)
 
 # +
 # Push to HF model repo.
-api.upload_file(path_or_fileobj=str(out_path),
+_retry(lambda: api.upload_file(path_or_fileobj=str(out_path),
                 path_in_repo=out_path.name,
                 repo_id=HF_MODEL_REPO,
-                commit_message="riemannian baseline v0.1")
-api.upload_file(path_or_fileobj="riemannian_lr_right_hand.json",
+                commit_message="riemannian baseline v0.1"), "upload onnx", 10, 20)
+_retry(lambda: api.upload_file(path_or_fileobj="riemannian_lr_right_hand.json",
                 path_in_repo="riemannian_lr_right_hand.json",
                 repo_id=HF_MODEL_REPO,
-                commit_message="riemannian baseline meta")
-api.upload_file(path_or_fileobj="rieman_frontend.npz",
+                commit_message="riemannian baseline meta"), "upload meta", 10, 20)
+_retry(lambda: api.upload_file(path_or_fileobj="rieman_frontend.npz",
                 path_in_repo="riemannian_lr_frontend.npz",
                 repo_id=HF_MODEL_REPO,
-                commit_message="riemannian frontend (cov+ts)")
+                commit_message="riemannian frontend (cov+ts)"), "upload frontend", 10, 20)
 print("DONE — pushed to", HF_MODEL_REPO)
 # -

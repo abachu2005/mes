@@ -35,6 +35,7 @@ _pip("pyriemann")
 # -
 
 # +
+import time
 import numpy as np
 import pandas as pd
 import onnxruntime as ort
@@ -45,13 +46,23 @@ HF_TOKEN = os.environ["HF_TOKEN"]
 HF_USER  = os.environ.get("HF_USERNAME", "abachu2005")
 HF_DATASET_REPO = os.environ.get("HF_DATASET_REPO", f"{HF_USER}/mes-eeg-processed")
 HF_MODEL_REPO   = os.environ.get("HF_MODEL_REPO",   f"{HF_USER}/mes-models")
-login(token=HF_TOKEN)
+
+def _retry(fn, what, tries=8, sleep_s=15):
+    for i in range(tries):
+        try: return fn()
+        except Exception as e:
+            print(f"  HF {what} attempt {i+1}/{tries} failed: {e}")
+            time.sleep(sleep_s)
+    raise RuntimeError(f"HF {what} failed after {tries} retries")
+
+_retry(lambda: login(token=HF_TOKEN, add_to_git_credential=False), "login")
 api = HfApi(token=HF_TOKEN)
 # -
 
 # +
-ds_dir = Path(snapshot_download(repo_id=HF_DATASET_REPO, repo_type="dataset", token=HF_TOKEN))
-m_dir  = Path(snapshot_download(repo_id=HF_MODEL_REPO,   token=HF_TOKEN))
+ds_dir = Path(_retry(lambda: snapshot_download(repo_id=HF_DATASET_REPO,
+                                                 repo_type="dataset", token=HF_TOKEN), "ds", 10, 20))
+m_dir  = Path(_retry(lambda: snapshot_download(repo_id=HF_MODEL_REPO, token=HF_TOKEN), "models", 10, 20))
 print("datasets:", sorted(p.name for p in ds_dir.iterdir())[:5])
 print("models:",   sorted(p.name for p in m_dir.iterdir()))
 # -
@@ -140,9 +151,9 @@ for model_name, by_ds in results["per_dataset"].items():
 Path("benchmarks.md").write_text("".join(md))
 Path("benchmarks.json").write_text(json.dumps(results, indent=2))
 
-api.upload_file(path_or_fileobj="benchmarks.md", path_in_repo="benchmarks.md",
-                repo_id=HF_MODEL_REPO, commit_message="auto benchmarks")
-api.upload_file(path_or_fileobj="benchmarks.json", path_in_repo="benchmarks.json",
-                repo_id=HF_MODEL_REPO, commit_message="auto benchmarks json")
+_retry(lambda: api.upload_file(path_or_fileobj="benchmarks.md", path_in_repo="benchmarks.md",
+                repo_id=HF_MODEL_REPO, commit_message="auto benchmarks"), "upload md", 10, 20)
+_retry(lambda: api.upload_file(path_or_fileobj="benchmarks.json", path_in_repo="benchmarks.json",
+                repo_id=HF_MODEL_REPO, commit_message="auto benchmarks json"), "upload json", 10, 20)
 print("DONE")
 # -
