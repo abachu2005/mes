@@ -38,8 +38,8 @@ def _pip(pkgs):
 
 _pip("'huggingface_hub>=0.24' pyarrow pandas scipy")
 _pip("mne")
-_pip("moabb")
-_pip("mne-icalabel autoreject")
+# NOTE: skip moabb + mne-icalabel + autoreject - Kaggle's network blocks these.
+# We use mne.datasets.eegbci directly for PhysioNet; ICA fallback uses kurtosis.
 # -
 
 # +
@@ -175,91 +175,84 @@ def epochs_to_parquet(epochs, dataset_name, subject_id, label_map, out_dir):
 # -
 
 # +
-# Dataset 1: BCI Competition IV 2a (small, sanity check) - load via MOABB.
-from moabb.datasets import BNCI2014001
-from moabb.paradigms import LeftRightImagery, MotorImagery
+# Dataset: PhysioNet EEG Motor Movement/Imagery (eegmmidb) via mne.datasets.eegbci.
+# 109 subjects, 14 runs each. Runs 4/8/12 = left/right hand MI;
+# runs 6/10/14 = both hands/feet MI; runs 1/2 = baseline rest.
+# Event codes in PhysioNet annotations: T0=rest, T1=left/both-hands, T2=right/feet.
+from mne.datasets import eegbci
 
-print("=== BCI IV 2a ===")
-ds = BNCI2014001()
-paradigm = MotorImagery(events=["left_hand","right_hand","feet","tongue"])
-label_map_2a = {"left_hand": 1, "right_hand": 2, "feet": 3, "tongue": 4}
-for sid in ds.subject_list[:9]:
+print("=== PhysioNet eegmmidb (via mne) ===")
+N_SUBJECTS = 30   # caps Kaggle wall-time around ~30-45 min total
+
+# Hand motor imagery runs only (T1 = left hand MI, T2 = right hand MI).
+MI_HAND_RUNS = [4, 8, 12]
+# Rest baseline (eyes open).
+REST_RUNS = [1]
+
+label_map_pn = {"rest": 0, "left_hand": 1, "right_hand": 2}
+
+def load_pn_raws(subject, runs):
+    """Download (cached) + load + concat raws for one subject."""
+    files = eegbci.load_data(subject, runs, update_path=True, verbose="ERROR")
+    raws = [mne.io.read_raw_edf(f, preload=True, verbose="ERROR") for f in files]
+    raw = mne.concatenate_raws(raws, verbose="ERROR")
+    # PhysioNet's channel names have trailing dots ("Fc3.."); normalize.
+    eegbci.standardize(raw)
+    raw.set_montage("standard_1005", on_missing="ignore", verbose="ERROR")
+    return raw
+
+for sid in range(1, N_SUBJECTS + 1):
     try:
-        X, y, meta = paradigm.get_data(dataset=ds, subjects=[sid])
-        # Reconstruct as continuous raw per session via meta...
-        # Simpler: use the epochs directly.
-        # MOABB returns numpy arrays already epoched. We need to manually preprocess raws,
-        # so use ds.get_data() to access raw mne objects:
-        data_dict = ds.get_data([sid])
-        for sess_name, runs in data_dict[sid].items():
-            for run_name, raw in runs.items():
-                raw.load_data()
-                raw_pp = preprocess_one(raw)
-                # Use built-in dataset event_id mapping; MOABB uses string codes
-                ep = epoch_one(raw_pp, event_id=label_map_2a)
-                if ep is not None and len(ep) > 0:
-                    epochs_to_parquet(
-                        ep, "bci_iv_2a", f"{sid}_{sess_name}_{run_name}",
-                        label_map_2a, OUT,
-                    )
-        print(f"  subject {sid} done")
-    except Exception as e:
-        print(f"  subject {sid} FAIL: {e}")
-    gc.collect()
-# -
+        # MI hand runs
+        raw_mi = load_pn_raws(sid, MI_HAND_RUNS)
+        raw_mi_pp = preprocess_one(raw_mi, do_ica=False)
+        # Map PhysioNet event codes (T0/T1/T2 -> 1/2/3 in mne annotations)
+        # to our integer labels. mne.events_from_annotations enumerates alphabetically.
+        events, ev_id = mne.events_from_annotations(raw_mi_pp, verbose="ERROR")
+        # ev_id is typically {'T0':1, 'T1':2, 'T2':3}. Map: T0->rest, T1->left_hand, T2->right_hand.
+        wanted = {}
+        if "T1" in ev_id: wanted["left_hand"]  = ev_id["T1"]
+        if "T2" in ev_id: wanted["right_hand"] = ev_id["T2"]
+        # Epoch task trials.
+        if wanted:
+            ep = mne.Epochs(raw_mi_pp, events, event_id=wanted,
+                            tmin=EPOCH_TMIN, tmax=EPOCH_TMAX, baseline=BASELINE,
+                            preload=True, reject_by_annotation=True, verbose="ERROR")
+            if len(ep) > 0:
+                epochs_to_parquet(ep, "physionet", f"{sid}_mi", wanted, OUT)
 
-# +
-# Dataset 2: PhysioNet eegmmidb - the heaviest healthy set.
-from moabb.datasets import PhysionetMI
-
-print("=== PhysioNet eegmmidb ===")
-ds = PhysionetMI()
-label_map_pn = {"left_hand": 1, "right_hand": 2, "feet": 3, "rest": 0}
-for sid in ds.subject_list[:30]:  # first 30 subjects to fit Kaggle time budget
-    try:
-        data_dict = ds.get_data([sid])
-        for sess_name, runs in data_dict[sid].items():
-            for run_name, raw in runs.items():
-                raw.load_data()
-                raw_pp = preprocess_one(raw, do_ica=False)  # 64ch but ICLabel slow
-                ep = epoch_one(raw_pp, event_id=label_map_pn)
-                if ep is not None and len(ep) > 0:
-                    epochs_to_parquet(
-                        ep, "physionet", f"{sid}_{sess_name}_{run_name}",
-                        label_map_pn, OUT,
-                    )
-        if sid % 5 == 0:
-            print(f"  subject {sid} done")
-    except Exception as e:
-        print(f"  subject {sid} FAIL: {e}")
-    gc.collect()
-# -
-
-# +
-# Dataset 3: Liu2024 (stroke hand MI) - may fail if not yet in installed MOABB.
-print("=== Liu2024 (stroke) ===")
-try:
-    from moabb.datasets import Liu2024
-    ds = Liu2024()
-    label_map_l = {"left_hand": 1, "right_hand": 2}
-    for sid in ds.subject_list[:20]:  # first 20 to fit time budget
+        # Rest baseline: window the resting run into pseudo-trials.
         try:
-            data_dict = ds.get_data([sid])
-            for sess_name, runs in data_dict[sid].items():
-                for run_name, raw in runs.items():
-                    raw.load_data()
-                    raw_pp = preprocess_one(raw, do_ica=True)
-                    ep = epoch_one(raw_pp, event_id=label_map_l)
-                    if ep is not None and len(ep) > 0:
-                        epochs_to_parquet(
-                            ep, "liu2024", f"{sid}_{sess_name}_{run_name}",
-                            label_map_l, OUT,
-                        )
+            raw_rest = load_pn_raws(sid, REST_RUNS)
+            raw_rest_pp = preprocess_one(raw_rest, do_ica=False)
+            arr = raw_rest_pp.get_data()
+            sfreq = raw_rest_pp.info["sfreq"]
+            ch_names = raw_rest_pp.info["ch_names"]
+            n_win = int((EPOCH_TMAX - EPOCH_TMIN) * sfreq)
+            n_trials = arr.shape[1] // n_win
+            if n_trials > 0:
+                data = np.stack([arr[:, i*n_win:(i+1)*n_win] for i in range(n_trials)])
+                # Wrap as a faux Epochs-like for parquet writer
+                rows = []
+                for i, A in enumerate(data):
+                    rows.append({
+                        "dataset": "physionet", "subject": f"{sid}_rest", "trial": i,
+                        "label": "rest", "sfreq": float(sfreq),
+                        "ch_names": json.dumps(ch_names),
+                        "data": A.astype("float32").tobytes(),
+                        "n_channels": int(A.shape[0]),
+                        "n_times": int(A.shape[1]),
+                    })
+                pd.DataFrame(rows).to_parquet(OUT / f"physionet_S{sid}_rest.parquet",
+                                              compression="zstd")
         except Exception as e:
-            print(f"  subject {sid} FAIL: {e}")
-        gc.collect()
-except Exception as e:
-    print("Liu2024 not available in this MOABB version, skipping:", e)
+            print(f"  subject {sid} rest FAIL: {e}")
+
+        if sid % 5 == 0:
+            print(f"  subject {sid}/{N_SUBJECTS} done")
+    except Exception as e:
+        print(f"  subject {sid} FAIL: {e}")
+    gc.collect()
 # -
 
 # +
