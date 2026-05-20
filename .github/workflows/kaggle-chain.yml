@@ -1,3 +1,4 @@
+# DEPRECATED: Kaggle DNS blocks physionet.org and PyPI. Use mes-train-pipeline.yml instead.
 name: kaggle-chain
 
 # Kaggle = compute only (/kaggle/working). GitHub Actions pulls output and syncs to HF.

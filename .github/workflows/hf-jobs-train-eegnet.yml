@@ -15,7 +15,7 @@ on:
         required: false
         default: 3h
   workflow_run:
-    workflows: [kaggle-chain]
+    workflows: [mes-train-pipeline]
     types: [completed]
 
 jobs:
