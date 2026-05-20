@@ -58,3 +58,4 @@ site/
 
 # OS
 Thumbs.db
+scripts/run_all_kaggle.log
