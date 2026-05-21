@@ -14,6 +14,13 @@ on:
         description: "Run 1-subject smoke probe during preflight"
         type: boolean
         default: false
+  push:
+    branches: [main]
+    paths:
+      - "scripts/gh_preprocess_physionet.py"
+      - "scripts/gh_train_riemannian.py"
+      - "scripts/hf_sync.py"
+      - ".github/workflows/mes-train-pipeline.yml"
   workflow_run:
     workflows: [kaggle-chain]
     types: [completed]
