@@ -74,8 +74,8 @@ def _http_reachable(url: str, timeout: float = 10.0) -> tuple[bool, str]:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return True, f"HTTP {resp.status}"
     except urllib.error.HTTPError as e:
-        # 403/405 still means DNS + TCP worked
-        if e.code in (403, 405, 301, 302):
+        # Non-5xx responses mean DNS + TCP worked (PhysioNet often 404 on HEAD).
+        if e.code < 500:
             return True, f"HTTP {e.code} (reachable)"
         return False, str(e)
     except Exception as e:
