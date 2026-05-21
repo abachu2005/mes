@@ -1,8 +1,12 @@
 # Changelog
 
-All notable changes to the `mes` Python package are documented here.
+All notable changes to the Motor Engagement Signal (`motor-engagement-signal` / `mes_core`) package are documented here.
 
 ## [Unreleased]
+
+### Changed
+
+- Formal project naming: PyPI-style distribution `motor-engagement-signal`, maintainer metadata (`AUTHORS.md`, `CITATION.cff`, `.zenodo.json`).
 
 ## [0.2.1] - 2026-05-21
 

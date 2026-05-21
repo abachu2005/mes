@@ -13,7 +13,10 @@ from rich.table import Table
 from mes_core import __version__
 from mes_core.config import HF_REPOS, OPENBCI_MONTAGE_16, TARGET_SFREQ
 
-app = typer.Typer(help="MES — Motor Engagement Signal CLI")
+app = typer.Typer(
+    help="Motor Engagement Signal (MES) — EEG rehabilitation scoring CLI",
+    no_args_is_help=True,
+)
 console = Console()
 
 

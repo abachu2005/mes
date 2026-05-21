@@ -1,5 +1,5 @@
 ---
-title: 'MES: Motor Engagement Signal software for open EEG rehabilitation research'
+title: 'Motor Engagement Signal (MES): open EEG software for motor-imagery rehabilitation research'
 tags:
   - Python
   - EEG
@@ -7,10 +7,10 @@ tags:
   - motor imagery
   - BCI
 authors:
-  - name: MES Project Authors
+  - name: Abhinav Achu
     affiliation: 1
 affiliations:
-  - name: To be completed by submitting authors
+  - name: Independent
     index: 1
 date: 21 May 2026
 bibliography: paper.bib
@@ -39,7 +39,7 @@ circularly training on classifier outputs. Existing general-purpose packages
 (MNE-Python, MOABB, PyRiemann, Braindecode) provide excellent building blocks but
 do not ship an integrated Motor Engagement index, OpenBCI-first montage contract,
 longitudinal reporting, and reproducible model artifacts for ambulatory 16-channel
-systems. MES fills that gap as installable research software (`pip install mes`)
+systems. MES fills that gap as installable research software (`pip install -e .` from GitHub; PyPI name `motor-engagement-signal` if published)
 with a documented CLI, validation harness, and optional FastAPI dashboard.
 
 # State of the field

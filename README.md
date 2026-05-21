@@ -87,9 +87,9 @@ make docker-run     # builds image and serves on http://localhost:7860
 Example (replace `XXXXXXX` with the Zenodo ID after your first release):
 
 ```bibtex
-@software{mes2026,
-  title   = {MES: Motor Engagement Signal},
-  author  = {{MES Contributors}},
+@software{achu_mes2026,
+  title   = {Motor Engagement Signal (MES)},
+  author  = {Achu, Abhinav},
   year    = {2026},
   url     = {https://github.com/abachu2005/mes},
   doi     = {10.5281/zenodo.XXXXXXX},
@@ -97,6 +97,8 @@ Example (replace `XXXXXXX` with the Zenodo ID after your first release):
   license = {MIT}
 }
 ```
+
+Python package name on install: `motor-engagement-signal` (import as `mes_core`; CLI command remains `mes`). See [`AUTHORS.md`](AUTHORS.md).
 
 ## Distribution
 

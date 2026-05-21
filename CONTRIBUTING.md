@@ -1,6 +1,6 @@
-# Contributing to MES
+# Contributing to Motor Engagement Signal (MES)
 
-Thank you for helping improve the Motor Engagement Signal (MES) project.
+Thank you for helping improve the MES project. Maintainer and citation details: [`AUTHORS.md`](AUTHORS.md), [`CITATION.cff`](CITATION.cff).
 
 ## Development setup
 

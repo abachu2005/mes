@@ -40,7 +40,7 @@ Keep these in sync when releasing:
 | File | Field |
 |------|--------|
 | `mes_core/__init__.py` | `__version__` |
-| `pyproject.toml` | `version` |
+| `pyproject.toml` | `version`, `name` (`motor-engagement-signal`) |
 | `CITATION.cff` | `version` |
 | `.zenodo.json` | `version` |
 | `CHANGELOG.md` | dated section |

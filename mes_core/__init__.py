@@ -1,6 +1,6 @@
-"""MES — Motor Engagement Signal.
+"""Motor Engagement Signal (MES).
 
-Quantifies neural drive for movement from EEG.
+Quantifies neural drive for movement recovery from EEG.
 """
 
 __version__ = "0.2.1"
