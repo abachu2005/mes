@@ -74,6 +74,12 @@ protocol-e2e:
 protocol-e2e-live:
 	$(PYTHON) scripts/run_protocol_e2e.py --live https://abachu2005-mes.hf.space --json-out /tmp/protocol_hf_report.json
 
+stroke-pipeline:
+	$(PYTHON) scripts/run_stroke_pipeline.py --data-dir $(PWD)/data/processed_stroke
+
+stroke-gates:
+	$(PYTHON) scripts/check_stroke_gates.py
+
 smoke-prod:
 	curl -fsS https://huggingface.co/spaces/abachu2005/mes/healthz || echo "Space sleeping or down"
 

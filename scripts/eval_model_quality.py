@@ -27,7 +27,7 @@ def loso_onnx(trials, filename: str) -> tuple[float, list[float]]:
     from sklearn.model_selection import GroupKFold
 
     try:
-        clf = load_onnx_model(filename)
+        clf, model_path = load_onnx_model(filename)
     except Exception as e:
         return float("nan"), [float("nan")]
 

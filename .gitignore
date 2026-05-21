@@ -43,6 +43,8 @@ data/
 !mes_core/data/
 mes_core/data/*
 !mes_core/data/*.json
+!mes_core/data/models/
+!mes_core/data/models/**
 /models/
 mlruns/
 *.edf
@@ -50,6 +52,8 @@ mlruns/
 *.gdf
 *.fif
 *.onnx
+!mes_core/data/models/*.onnx
+!mes_core/data/models/*.npz
 !tests/fixtures/**/*.edf
 !tests/fixtures/**/*.bdf
 !tests/fixtures/**/*.onnx
@@ -62,3 +66,4 @@ site/
 # OS
 Thumbs.db
 scripts/run_all_kaggle.log
+validation_out/

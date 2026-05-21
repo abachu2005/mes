@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -26,7 +27,7 @@ def _fake_clf(*, tangent: bool, proba: np.ndarray, tag: str) -> OnnxClassifier:
 def test_ensemble_averages_both_models(mock_predict, mock_load) -> None:
     riem = _fake_clf(tangent=True, proba=np.array([0.2, 0.4]), tag="riemannian_lr")
     eeg = _fake_clf(tangent=False, proba=np.array([0.6, 0.8]), tag="eegnet_v4")
-    mock_load.side_effect = [riem, eeg]
+    mock_load.side_effect = [(riem, Path("/tmp/riem.onnx")), (eeg, Path("/tmp/eeg.onnx"))]
     mock_predict.side_effect = [np.array([0.2, 0.4]), np.array([0.6, 0.8])]
 
     p, model_id = resolve_session_posterior(np.zeros((2, 16, 750)), "right_hand")
@@ -41,7 +42,7 @@ def test_ensemble_averages_both_models(mock_predict, mock_load) -> None:
 @patch("mes_core.models.inference._predict_target_proba")
 def test_single_model_when_eegnet_missing(mock_predict, mock_load) -> None:
     riem = _fake_clf(tangent=True, proba=np.array([0.3, 0.7]), tag="riemannian_lr")
-    mock_load.side_effect = [riem, FileNotFoundError("missing")]
+    mock_load.side_effect = [(riem, Path("/tmp/riem.onnx")), FileNotFoundError("missing")]
     mock_predict.return_value = np.array([0.3, 0.7])
 
     p, model_id = resolve_session_posterior(np.zeros((2, 16, 750)), "right_hand")
@@ -55,3 +56,11 @@ def test_raises_when_no_models(mock_load) -> None:
     mock_load.side_effect = FileNotFoundError("missing")
     with pytest.raises(FileNotFoundError):
         resolve_session_posterior(np.zeros((1, 16, 750)), "right_hand")
+
+
+@patch("mes_core.models.inference.load_onnx_model")
+def test_stroke_feature_first_when_no_models(mock_load) -> None:
+    mock_load.side_effect = FileNotFoundError("missing")
+    p, model_id = resolve_session_posterior(np.zeros((2, 16, 750)), "right_hand", cohort="stroke")
+    assert np.allclose(p, [0.5, 0.5])
+    assert model_id == "stroke_feature_first"
