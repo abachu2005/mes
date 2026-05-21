@@ -40,7 +40,7 @@ kaggle.json
 
 # Data / models (large, hosted on HF)
 data/
-models/
+/models/
 mlruns/
 *.edf
 *.bdf

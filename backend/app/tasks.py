@@ -43,23 +43,9 @@ def _update(session_id: str, **fields: object) -> None:
 
 
 def _resolve_p_model(epoch_data: np.ndarray, task: str) -> tuple[np.ndarray, str | None]:
-    """Try to load the production ONNX model; if unavailable, fall back to a
-    feature-driven heuristic posterior so MES is still computable."""
+    """Load Riemannian and/or EEGNet ONNX models; ensemble mean when both exist."""
     try:
-        from mes_core.models.inference import load_onnx_model
-
-        filename = "riemannian_lr_right_hand.onnx" if "right" in task else "riemannian_lr_right_hand.onnx"
-        clf = load_onnx_model(filename)
-        if len(clf.feature_shape) == 1 and clf.feature_shape[0] not in (-1, 0):
-            from pyriemann.estimation import Covariances
-            from pyriemann.tangentspace import TangentSpace
-            cov = Covariances(estimator="oas").fit_transform(epoch_data.astype(float))
-            ts = TangentSpace(metric="riemann").fit_transform(cov)
-            p = clf.predict_proba(ts)
-        else:
-            p = clf.predict_proba(epoch_data)
-        p_target = p[:, 1] if p.shape[1] > 1 else p[:, 0]
-        return p_target, clf.metadata.get("sha", None)
+        return resolve_session_posterior(epoch_data, task)
     except Exception as e:  # noqa: BLE001
         log.warning("model_unavailable_using_heuristic", err=str(e))
         # Heuristic: contralateral mu-band ERD strength mapped through a logistic.
