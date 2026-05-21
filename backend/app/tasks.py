@@ -21,6 +21,7 @@ from mes_core.config import OPENBCI_MONTAGE_16, TARGET_SFREQ
 from mes_core.features.bandpower import erd_percent
 from mes_core.features.lateralization import default_contra_ipsi_for_task, lateralization_index
 from mes_core.io import load_eeg
+from mes_core.models.inference import resolve_session_posterior
 from mes_core.preprocessing import PreprocessConfig, epoch_raw, preprocess_raw
 from mes_core.scoring import MesWeights, SubjectBaseline, compute_mes
 from mes_core.viz.report import ReportContext, build_session_report_html, render_pdf
