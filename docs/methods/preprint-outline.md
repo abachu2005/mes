@@ -18,7 +18,7 @@
 5. Classifiers — Riemannian + EEGNet ensemble, ONNX export.
 6. Validation — `mes validate` metrics, stroke held-out splits (when parquet available).
 7. Limitations — 16ch vs 64ch cap, research-only, ICA at low density.
-8. Software availability — GitHub, HF Hub, `pip install mes`, JOSS citation.
+8. Software availability — GitHub, HF Hub, editable install / `motor-engagement-signal`, JOSS citation.
 
 ## Figures to generate
 

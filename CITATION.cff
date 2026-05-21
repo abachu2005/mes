@@ -1,26 +1,35 @@
 cff-version: 1.2.0
-title: MES — Motor Engagement Signal
+title: Motor Engagement Signal (MES)
 message: >-
   If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
-  - name: MES Project Authors
-    affiliation: TBD
+  - given-names: Abhinav
+    family-names: Achu
 repository-code: 'https://github.com/abachu2005/mes'
 url: 'https://huggingface.co/spaces/abachu2005/mes'
-license: Apache-2.0
-version: 0.2.0
+license: MIT
+version: 0.2.1
 keywords:
+  - motor engagement signal
   - EEG
   - stroke rehabilitation
   - motor imagery
   - brain-computer interface
   - open science
+identifiers:
+  - type: url
+    value: 'https://github.com/abachu2005/mes/releases'
+    description: GitHub releases (Zenodo DOI is minted per release — see docs/releasing.md)
 preferred-citation:
   type: article
-  title: 'MES: Motor Engagement Signal software for open EEG rehabilitation research'
+  title: >-
+    Motor Engagement Signal (MES): open EEG software for motor-imagery
+    rehabilitation research
   authors:
-    - name: MES Project Authors
+    - given-names: Abhinav
+      family-names: Achu
   year: 2026
-  journal: Journal of Open Source Software
-  notes: Submit via JOSS; update DOI after acceptance and Zenodo archive.
+  notes: >-
+    After enabling Zenodo–GitHub integration, add a release DOI under
+    identifiers, e.g. 10.5281/zenodo.XXXXXXX. See docs/releasing.md.

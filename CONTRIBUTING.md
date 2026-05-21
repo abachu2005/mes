@@ -1,6 +1,6 @@
-# Contributing to MES
+# Contributing to Motor Engagement Signal (MES)
 
-Thank you for helping improve the Motor Engagement Signal (MES) project.
+Thank you for helping improve the MES project. Maintainer and citation details: [`AUTHORS.md`](AUTHORS.md), [`CITATION.cff`](CITATION.cff).
 
 ## Development setup
 
@@ -32,7 +32,10 @@ Use GitHub Issues for bugs, documentation gaps, and feature requests. Include:
 MES is **research software only** (not a medical device). Contributions that improve
 reproducibility, validation, documentation, and open science are especially welcome.
 
-## JOSS / citation
+## Releases and citation
 
-If you use MES in publication, cite the software archive DOI (after Zenodo release)
-and the companion methods preprint when available. See `CITATION.cff` and `paper.md`.
+We release via **GitHub tags**; **Zenodo** mints a DOI per release (see `docs/releasing.md`).
+PyPI and Bioconda are intentionally not used.
+
+If you use MES in a publication, cite the Zenodo DOI for the version you used
+(update `CITATION.cff` after the first archived release). See also `paper.md` for JOSS planning.

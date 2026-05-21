@@ -1,9 +1,9 @@
-"""MES — Motor Engagement Signal.
+"""Motor Engagement Signal (MES).
 
-Quantifies neural drive for movement from EEG.
+Quantifies neural drive for movement recovery from EEG.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from mes_core.config import OPENBCI_MONTAGE_16, TARGET_SFREQ
 

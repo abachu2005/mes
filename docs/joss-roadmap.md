@@ -6,7 +6,7 @@ This document tracks readiness for the [Journal of Open Source Software](https:/
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| OSI license (`LICENSE`) | Done | Apache-2.0 |
+| OSI license (`LICENSE`) | Done | MIT |
 | 6+ months public development | **Action** | Maintain open commits/issues until eligible |
 | Research impact evidence | **Action** | Methods preprint + external pilot users |
 | Tests + CI | Done | `pytest`, GitHub Actions |

@@ -20,17 +20,25 @@ from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType
 
 TARGET_T = 750
-TARGET_CLASSES = {"right_hand": 1, "rest": 0}
+
+HEALTHY_LABELS = {"right_hand": 1, "rest": 0}
+STROKE_LABELS = {"right_hand": 1, "rest": 0, "break": 0}
 
 
-def load_subset(files: list[Path], prefix: str) -> list[dict]:
+def load_subset(
+    files: list[Path],
+    prefix: str,
+    *,
+    label_map: dict[str, int],
+) -> list[dict]:
     rows: list[dict] = []
     for f in files:
         if not f.name.startswith(prefix):
             continue
         df = pd.read_parquet(f)
         for _, r in df.iterrows():
-            if r["label"] not in TARGET_CLASSES:
+            lab = str(r["label"])
+            if lab not in label_map:
                 continue
             x = np.frombuffer(r["data"], dtype="float32").reshape(r["n_channels"], r["n_times"])
             n = x.shape[1]
@@ -38,13 +46,24 @@ def load_subset(files: list[Path], prefix: str) -> list[dict]:
                 x = x[:, :TARGET_T]
             else:
                 x = np.concatenate([x, np.zeros((x.shape[0], TARGET_T - n), dtype="float32")], 1)
-            rows.append({"X": x, "y": TARGET_CLASSES[r["label"]], "subject": r["subject"]})
+            rows.append({"X": x, "y": label_map[lab], "subject": r["subject"]})
     return rows
 
 
-def train(data_dir: Path, out_dir: Path) -> None:
+def train(
+    data_dir: Path,
+    out_dir: Path,
+    *,
+    prefix: str = "physionet_",
+    onnx_name: str = "riemannian_lr_right_hand.onnx",
+    meta_name: str = "riemannian_lr_right_hand.json",
+    frontend_name: str = "riemannian_lr_frontend.npz",
+    label_map: dict[str, int] | None = None,
+    cohort: str = "healthy",
+) -> dict[str, float]:
+    label_map = label_map or (STROKE_LABELS if cohort == "stroke" else HEALTHY_LABELS)
     files = sorted(data_dir.glob("*.parquet"))
-    train_rows = load_subset(files, "physionet_")
+    train_rows = load_subset(files, prefix, label_map=label_map)
     if len(train_rows) < 20:
         raise RuntimeError(f"Need >=20 trials, got {len(train_rows)}")
 
@@ -63,7 +82,8 @@ def train(data_dir: Path, out_dir: Path) -> None:
             ]
         )
 
-    gkf = GroupKFold(n_splits=min(5, len(np.unique(subjects))))
+    n_subj = len(np.unique(subjects))
+    gkf = GroupKFold(n_splits=min(5, max(2, n_subj)))
     accs: list[float] = []
     for tr, te in gkf.split(x, y, groups=subjects):
         pipe = build_pipe()
@@ -91,37 +111,64 @@ def train(data_dir: Path, out_dir: Path) -> None:
     )
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    onnx_path = out_dir / "riemannian_lr_right_hand.onnx"
+    onnx_path = out_dir / onnx_name
     onnx_path.write_bytes(onx.SerializeToString())
     meta = {
         "model": "riemannian_lr",
         "task": "right_hand_vs_rest",
+        "cohort": cohort,
         "input_kind": "tangent_space",
         "n_features": int(ts_x.shape[1]),
         "n_classes": 2,
         "loso_acc": mean_acc,
         "n_train": int(x.shape[0]),
-        "channels": 16,
+        "n_subjects": int(n_subj),
+        "channels": int(x.shape[1]),
         "sfreq": 125.0,
         "epoch_samples": int(x.shape[2]),
         "trained_on": "github_actions",
+        "data_prefix": prefix,
     }
-    (out_dir / "riemannian_lr_right_hand.json").write_text(json.dumps(meta, indent=2))
+    (out_dir / meta_name).write_text(json.dumps(meta, indent=2))
     cov_est = getattr(cov_tr, "estimator_", None) or cov_tr.estimator
     np.savez(
-        str(out_dir / "riemannian_lr_frontend.npz"),
+        str(out_dir / frontend_name),
         cov_estimator=np.array([cov_est], dtype=object),
         ts_reference=ts.reference_,
     )
     print("Wrote", onnx_path)
+    return {"loso_acc": mean_acc, "n_train": int(x.shape[0]), "n_subjects": n_subj}
 
 
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--data", type=Path, required=True)
     p.add_argument("--out", type=Path, default=Path("/tmp/mes-models"))
+    p.add_argument("--cohort", choices=["healthy", "stroke"], default="healthy")
+    p.add_argument("--prefix", default=None, help="Parquet filename prefix")
+    p.add_argument("--onnx-name", default=None)
     args = p.parse_args()
-    train(args.data, args.out)
+    prefix = args.prefix or ("liu2024_" if args.cohort == "stroke" else "physionet_")
+    onnx_name = args.onnx_name or (
+        "riemannian_lr_right_hand_stroke.onnx"
+        if args.cohort == "stroke"
+        else "riemannian_lr_right_hand.onnx"
+    )
+    meta_name = onnx_name.replace(".onnx", ".json")
+    frontend_name = (
+        "riemannian_lr_frontend_stroke.npz"
+        if args.cohort == "stroke"
+        else "riemannian_lr_frontend.npz"
+    )
+    train(
+        args.data,
+        args.out,
+        prefix=prefix,
+        onnx_name=onnx_name,
+        meta_name=meta_name,
+        frontend_name=frontend_name,
+        cohort=args.cohort,
+    )
     return 0
 
 

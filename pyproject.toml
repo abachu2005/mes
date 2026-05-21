@@ -3,13 +3,39 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mes"
-version = "0.2.0"
-description = "Motor Engagement Signal: quantifying neural drive for movement recovery from EEG."
-authors = [{ name = "MES Project" }]
-license = { text = "Apache-2.0" }
+name = "motor-engagement-signal"
+version = "0.2.1"
+description = "Motor Engagement Signal (MES): quantifying neural drive for movement recovery from EEG."
+authors = [{ name = "Abhinav Achu" }]
+maintainers = [{ name = "Abhinav Achu", email = "abachu2005@users.noreply.github.com" }]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
+keywords = [
+    "eeg",
+    "motor-imagery",
+    "stroke",
+    "neurorehabilitation",
+    "brain-computer-interface",
+    "motor-engagement-signal",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+[project.urls]
+Homepage = "https://github.com/abachu2005/mes"
+Documentation = "https://github.com/abachu2005/mes/tree/main/docs"
+Repository = "https://github.com/abachu2005/mes"
+Issues = "https://github.com/abachu2005/mes/issues"
+Changelog = "https://github.com/abachu2005/mes/blob/main/CHANGELOG.md"
+"Live demo" = "https://huggingface.co/spaces/abachu2005/mes"
 dependencies = [
     "numpy>=1.26,<2.2",
     "scipy>=1.11,<2",

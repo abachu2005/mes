@@ -115,8 +115,10 @@ export function Landing() {
           </div>
           <p className="md:col-span-2 text-ink-600 dark:text-ink-300">
             Trained on 100+ healthy controls (PhysioNet eegmmidb), benchmarked on BCI Competition IV 2a/2b,
-            and clinically validated on 50 acute stroke patients (Liu2024) plus longitudinal recovery data
-            (Liu2025). All metrics auto-generated and published in <a className="text-teal-600 hover:underline" href="https://huggingface.co/abachu2005/mes-models">benchmarks.md</a>.
+            with open benchmarks on PhysioNet MI and Liu2024 acute stroke (hand MI vs rest/break).
+            Stroke discrimination is tracked separately from healthy MI — see{" "}
+            <a className="text-teal-600 hover:underline" href="https://huggingface.co/abachu2005/mes-models">benchmarks.md</a>{" "}
+            and the committed benchmarks JSON in the repository.
           </p>
         </div>
       </section>

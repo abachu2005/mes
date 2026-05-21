@@ -1,0 +1,38 @@
+{
+  "stroke_liu2024": {
+    "n_trials": 2951,
+    "n_subjects": 50,
+    "mes_auc": 0.6933546899026141,
+    "mes_cohen_d": 0.6541089729164085,
+    "models": [
+      {
+        "name": "ensemble_posterior",
+        "accuracy": 0.6712978651304643,
+        "auc": 0.6916806765761149,
+        "brier": 0.2557444636057183,
+        "n": 2951
+      },
+      {
+        "name": "MES_0_100",
+        "accuracy": 0.6787529650965775,
+        "auc": 0.6933546899026141,
+        "brier": 0.20548132719509907,
+        "n": 2951
+      },
+      {
+        "name": "MES_features_only",
+        "accuracy": 0.5445611657065401,
+        "auc": 0.5378282931829832,
+        "brier": 0.22343130861516472,
+        "n": 2951
+      }
+    ],
+    "riemannian_loso_acc": 0.6258802948177463
+  },
+  "gates": {
+    "min_mes_auc": 0.65,
+    "target_mes_auc": 0.75,
+    "min_cohen_d": 0.55,
+    "target_cohen_d": 0.8
+  }
+}

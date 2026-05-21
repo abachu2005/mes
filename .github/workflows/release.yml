@@ -1,0 +1,28 @@
+# Validate version metadata on release tags (no PyPI publish).
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Check version alignment
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PY=$(python -c "import mes_core; print(mes_core.__version__)")
+          TOML=$(python -c "import pathlib,re; t=pathlib.Path('pyproject.toml').read_text(); print(re.search(r'^version = \"([^\"]+)\"', t, re.M).group(1))")
+          echo "tag v${TAG}  mes_core=${PY}  pyproject=${TOML}"
+          test "${TAG}" = "${PY}"
+          test "${TAG}" = "${TOML}"
+      - name: Remind Zenodo
+        run: |
+          echo "::notice::If Zenodo–GitHub sync is enabled, an archive for ${GITHUB_REF} should appear at https://zenodo.org/account/settings/github/"
