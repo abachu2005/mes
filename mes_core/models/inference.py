@@ -134,11 +134,20 @@ def _fit_epoch_window(epoch_data: np.ndarray, n_times: int = 750) -> np.ndarray:
     return np.concatenate([x, pad], axis=-1)
 
 
-def resolve_session_posterior(epoch_data: np.ndarray, task: str) -> tuple[np.ndarray, str]:
+def resolve_session_posterior(
+    epoch_data: np.ndarray,
+    task: str,
+    *,
+    cohort: str = "healthy",
+) -> tuple[np.ndarray, str]:
     """Load available ONNX classifiers for *task* and combine into p_model.
 
     Uses the mean posterior when both Riemannian and EEGNet are on HF Hub;
     otherwise uses whichever is available. Raises if none load.
+
+    For ``cohort='stroke'``, posteriors are shrunk toward 0.5 because the
+    production ensemble was trained on healthy PhysioNet MI (poor transfer).
+    Stroke cohort MES weights rely more on ERD features than ``p_model``.
     """
     epoch_data = _fit_epoch_window(np.asarray(epoch_data))
     specs = _task_models(task)
@@ -159,5 +168,9 @@ def resolve_session_posterior(epoch_data: np.ndarray, task: str) -> tuple[np.nda
         raise FileNotFoundError(f"No ONNX classifiers available for task {task!r}")
 
     combined = np.mean(np.stack(posteriors, axis=0), axis=0)
+    if cohort == "stroke":
+        # Acute-stroke domain shift: down-weight overconfident healthy-trained posteriors.
+        combined = np.clip(0.25 * combined + 0.75 * 0.5, 0.05, 0.95)
+        tags.append("stroke_shrink")
     model_id = "ensemble(" + "+".join(tags) + ")" if len(posteriors) > 1 else tags[0]
     return combined, model_id

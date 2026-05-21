@@ -19,6 +19,7 @@ from mes_core.preprocessing import (
 )
 from mes_core.quality import assess_session, reliability_tier
 from mes_core.scoring import MesScoreResult, compute_mes, fit_subject_baseline
+from mes_core.scoring.rehab_proxy import RehabProxyResult, compute_rehab_proxy
 from mes_core.scoring.rest import rest_mask_protocol, split_rest_and_task_epochs
 
 # Sliding-window params (must match epoch_sliding_windows defaults).
@@ -42,6 +43,7 @@ class SessionScoreResult:
     reliability: str = "Medium"
     cohort: str = "healthy"
     posterior_entropy: float | None = None
+    rehab_proxy: RehabProxyResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
         out = self.mes.to_dict()
@@ -53,6 +55,8 @@ class SessionScoreResult:
         out["reliability"] = self.reliability
         out["cohort"] = self.cohort
         out["posterior_entropy"] = self.posterior_entropy
+        if self.rehab_proxy is not None:
+            out["rehab_proxy"] = self.rehab_proxy.to_dict()
         return out
 
 
@@ -68,6 +72,10 @@ def score_epochs(
     require_quality: bool = True,
     had_rest_block: bool = False,
     used_sliding_windows: bool = False,
+    paralysis_side: str | None = None,
+    nihss: float | None = None,
+    mbi: float | None = None,
+    trial_labels: list[str] | None = None,
 ) -> SessionScoreResult:
     """Score preprocessed epoch tensor (n_epochs, n_ch, n_times)."""
     data = np.asarray(epochs_data, dtype=float)
@@ -118,16 +126,18 @@ def score_epochs(
         baseline = fit_subject_baseline(rest_data, sfreq, ch_names, task)
         baseline_kind = "subject_rest"
     elif kind == "per_trial":
-        baseline = load_population_baseline(task)
+        baseline = load_population_baseline(task, cohort=cohort)
         baseline_kind = "per_trial"
     else:
-        baseline = load_population_baseline(task)
+        baseline = load_population_baseline(task, cohort=cohort)
         baseline_kind = "population"
 
     p_entropy: float | None = None
     if use_onnx:
         try:
-            p_model, model_sha = resolve_session_posterior(task_data, task)
+            p_model, model_sha = resolve_session_posterior(
+                task_data, task, cohort=cohort
+            )
             p_clip = np.clip(p_model, 1e-6, 1 - 1e-6)
             p_entropy = float(-np.mean(
                 p_clip * np.log(p_clip) + (1 - p_clip) * np.log(1 - p_clip)
@@ -152,6 +162,22 @@ def score_epochs(
         rest_epochs_data=rest_data,
     )
     rel = reliability_tier(sq, baseline_kind=baseline_kind, posterior_entropy=p_entropy)
+
+    rehab: RehabProxyResult | None = None
+    if cohort == "stroke":
+        labels_for_rehab = trial_labels
+        if not labels_for_rehab and task == "right_hand":
+            labels_for_rehab = ["right_hand"] * len(mes.mes_per_trial)
+        if labels_for_rehab and len(labels_for_rehab) == len(mes.mes_per_trial):
+            rehab = compute_rehab_proxy(
+                mes.mes_per_trial,
+                labels_for_rehab,
+                paralysis_side=paralysis_side,
+                nihss=nihss,
+                mbi=mbi,
+                mes_global_mean=float(mes.summary["mes_mean"]),
+            )
+
     return SessionScoreResult(
         mes=mes,
         model_sha=model_sha,
@@ -162,6 +188,7 @@ def score_epochs(
         reliability=rel,
         cohort=cohort,
         posterior_entropy=p_entropy,
+        rehab_proxy=rehab,
     )
 
 

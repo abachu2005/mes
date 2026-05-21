@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import typer
@@ -77,6 +78,31 @@ def validate_cmd(
     console.print(f"[green]Wrote[/] {out_dir}/validation_report.json")
     for m in report.models:
         console.print(f"  {m.name}: acc={m.accuracy:.3f} auc={m.auc:.3f}")
+
+
+@app.command("clinical-validate")
+def clinical_validate_cmd(
+    data_dir: Path = typer.Option(Path("data/processed_stroke")),
+    out_dir: Path = typer.Option(Path("validation_out/clinical")),
+    preprocess: bool = typer.Option(False, "--preprocess"),
+    fetch_clinical: bool = typer.Option(False, "--fetch-clinical"),
+) -> None:
+    """Stroke + healthy open-dataset validation and rehab-proxy metrics."""
+    import subprocess
+
+    cmd = [
+        sys.executable,
+        str(Path(__file__).resolve().parents[1] / "scripts/run_clinical_validation.py"),
+        "--data-dir",
+        str(data_dir),
+        "--out",
+        str(out_dir),
+    ]
+    if preprocess:
+        cmd.append("--preprocess")
+    if fetch_clinical:
+        cmd.append("--fetch-clinical")
+    subprocess.run(cmd, check=True)
 
 
 @app.command("fit-weights")

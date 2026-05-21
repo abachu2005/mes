@@ -9,7 +9,12 @@ import numpy as np
 import pandas as pd
 
 TARGET_T = 750
-LABEL_MAP = {"right_hand": 1, "rest": 0, "break": 0, "left_hand": 1}
+LABEL_MAP = {
+    "right_hand": 1,
+    "left_hand": 1,
+    "rest": 0,
+    "break": 0,
+}
 
 
 @dataclass

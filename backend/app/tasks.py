@@ -165,6 +165,8 @@ def run_session_pipeline(
             "n_rest_epochs": scored.n_rest_epochs,
             "n_task_epochs": scored.n_task_epochs,
         }
+        if scored.rehab_proxy is not None:
+            score_meta["rehab_proxy"] = scored.rehab_proxy.to_dict()
 
         report_uri = _render_and_store_report(
             session_id=session_id,

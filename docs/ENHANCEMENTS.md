@@ -18,12 +18,19 @@ python scripts/fit_mes_weights.py --download --cohort stroke
 python scripts/preprocess_moabb_datasets.py --out /tmp/mes-out/processed
 ```
 
+## Rehab proxy (stroke cohort)
+
+- **RPI** — `mes_core/scoring/rehab_proxy.py` (paretic-hand MES × MBI/NIHSS capacity when clinical TSV present)
+- **Liu2024 preprocess** — `python3 scripts/preprocess_moabb_datasets.py --stroke --out data/processed_stroke`
+- **Clinical validation** — `mes clinical-validate` → [`docs/clinical-validation.md`](clinical-validation.md)
+- **Patient table** — `python3 scripts/fetch_liu2024_clinical.py` (Figshare `participants.tsv`)
+
 ## Clinical outcomes (CSV)
 
 Provide `participant_code,fma,arat` CSV and use `mes_core.eval.outcomes` to correlate with mean MES.
 
 ## Next science steps
 
-1. Upload Liu/Lee2019 parquet to HF `processed/`
-2. Refit stroke weights + re-run validate
-3. Prospective IRB pilot linking ΔMES to ΔFMA
+1. Upload full Liu2024/2025 parquet to HF `processed/`
+2. Fine-tune ONNX on stroke (healthy ensemble AUC ~0.55 on Liu today)
+3. Prospective IRB pilot linking ΔRPI/ΔMES to ΔFMA

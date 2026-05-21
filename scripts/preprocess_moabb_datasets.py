@@ -122,7 +122,7 @@ def preprocess_liu2024(out_dir: Path, *, max_subjects: int = 50) -> int:
 
     ds = Liu2024(break_events=True)
     out_dir.mkdir(parents=True, exist_ok=True)
-    cfg = PreprocessConfig()
+    cfg = PreprocessConfig(do_ica=False)
     n = 0
     for sid in ds.subject_list[:max_subjects]:
         try:
@@ -136,9 +136,11 @@ def preprocess_liu2024(out_dir: Path, *, max_subjects: int = 50) -> int:
             raw_pp = preprocess_raw(raw, cfg)
             _events, event_id = mne.events_from_annotations(raw_pp, verbose="ERROR")
             label_map = {
-                k: int(v) for k, v in event_id.items() if k in ("right_hand", "break")
+                k: int(v)
+                for k, v in event_id.items()
+                if k in ("right_hand", "left_hand", "break")
             }
-            if "right_hand" not in label_map:
+            if "right_hand" not in label_map and "left_hand" not in label_map:
                 continue
             n += _export_mi_epochs(
                 {sub_id: {sess_id: {run_id: raw}}},
@@ -164,7 +166,7 @@ def preprocess_liu2025(out_dir: Path, *, max_subjects: int = 27) -> int:
 
     ds = Liu2025()
     out_dir.mkdir(parents=True, exist_ok=True)
-    cfg = PreprocessConfig()
+    cfg = PreprocessConfig(do_ica=False)
     n = 0
     for sid in ds.subject_list[:max_subjects]:
         try:

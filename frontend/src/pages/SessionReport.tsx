@@ -81,7 +81,14 @@ export function SessionReport() {
   }
 
   const sc = score.data;
-  const band = mesBand(sc.mes_mean);
+  const rehabMeta = sc.score_meta?.rehab_proxy as
+    | { rehab_proxy_index?: number; mes_paretic_mean?: number; capacity_weight?: number }
+    | undefined;
+  const headlineMes =
+    typeof rehabMeta?.rehab_proxy_index === "number"
+      ? rehabMeta.rehab_proxy_index
+      : sc.mes_mean;
+  const band = mesBand(headlineMes);
   const model = formatModelSha(sc.model_sha);
 
   const tourSteps: Step[] = [
@@ -157,8 +164,24 @@ export function SessionReport() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="card p-6 lg:col-span-1" data-tour="gauge">
-          <Header icon={<Activity className="w-4 h-4" />} title="Headline MES" hint="The Motor Engagement Signal is a 0–100 score that combines ERD strength, lateralization, MRCP amplitude, and the classifier posterior. 100 means maximum task-related neural drive." />
-          <MesGauge value={sc.mes_mean} />
+          <Header
+            icon={<Activity className="w-4 h-4" />}
+            title={rehabMeta ? "Rehab proxy (RPI)" : "Headline MES"}
+            hint={
+              rehabMeta
+                ? "Stroke cohort: paretic-hand MES weighted by clinical capacity (MBI/NIHSS when available). Research index only."
+                : "The Motor Engagement Signal is a 0–100 score that combines ERD strength, lateralization, MRCP amplitude, and the classifier posterior. 100 means maximum task-related neural drive."
+            }
+          />
+          <MesGauge value={headlineMes} />
+          {rehabMeta && (
+            <p className="text-xs text-ink-500 mt-2 text-center">
+              Raw MES mean {sc.mes_mean.toFixed(1)}
+              {rehabMeta.mes_paretic_mean != null && (
+                <> · Paretic-hand MES {Number(rehabMeta.mes_paretic_mean).toFixed(1)}</>
+              )}
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-3 mt-4 text-center">
             <Stat label="Median" value={sc.mes_median.toFixed(1)} />
             <Stat label="Std" value={sc.mes_std.toFixed(1)} />

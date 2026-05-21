@@ -1,0 +1,101 @@
+{
+  "healthy": {
+    "cohort": "healthy",
+    "validation": {
+      "n_trials": 647,
+      "n_subjects": 40,
+      "models": [
+        {
+          "name": "ensemble_posterior",
+          "accuracy": 0.6460587326120556,
+          "auc": 0.9049776286353468,
+          "brier": 0.1618065622098877,
+          "n": 647
+        },
+        {
+          "name": "MES_0_100",
+          "accuracy": 0.6460587326120556,
+          "auc": 0.8243624161073826,
+          "brier": 0.48493694120721137,
+          "n": 647
+        },
+        {
+          "name": "MES_features_only",
+          "accuracy": 0.6553323029366306,
+          "auc": 0.9685458612975391,
+          "brier": 0.06647666240249543,
+          "n": 647
+        }
+      ],
+      "mes_cohen_d_task_vs_rest": 0.8590484863773714,
+      "notes": [
+        "Labels from dataset parquet (right_hand=1, rest=0).",
+        "ensemble_posterior uses production ONNX mean posterior."
+      ]
+    },
+    "per_subject_mes_mean": {},
+    "rehab_proxy_mean": null,
+    "outcome_correlations": {},
+    "notes": [
+      "PhysioNet reference cohort (HF cache)."
+    ]
+  },
+  "stroke": {
+    "cohort": "stroke",
+    "validation": {
+      "n_trials": 826,
+      "n_subjects": 14,
+      "models": [
+        {
+          "name": "ensemble_posterior",
+          "accuracy": 0.5278450363196125,
+          "auc": 0.5279729199372056,
+          "brier": 0.2554795939772646,
+          "n": 826
+        },
+        {
+          "name": "MES_0_100",
+          "accuracy": 0.5569007263922519,
+          "auc": 0.573076923076923,
+          "brier": 0.22182885769346763,
+          "n": 826
+        },
+        {
+          "name": "MES_features_only",
+          "accuracy": 0.5581113801452785,
+          "auc": 0.5654958137100995,
+          "brier": 0.2221921092202011,
+          "n": 826
+        }
+      ],
+      "mes_cohen_d_task_vs_rest": 0.2142054365429433,
+      "notes": [
+        "Labels from dataset parquet (right_hand=1, rest=0).",
+        "ensemble_posterior uses production ONNX mean posterior."
+      ]
+    },
+    "per_subject_mes_mean": {
+      "S10_s0_r0": 33.55991517437739,
+      "S11_s0_r0": 33.11418411635845,
+      "S12_s0_r0": 34.655447246035365,
+      "S13_s0_r0": 29.603274146123066,
+      "S14_s0_r0": 35.88702213760859,
+      "S1_s0_r0": 33.74637185238966,
+      "S2_s0_r0": 35.26130179941322,
+      "S3_s0_r0": 35.41613598619433,
+      "S4_s0_r0": 37.617373754368494,
+      "S5_s0_r0": 37.43692144864026,
+      "S6_s0_r0": 32.43176208826014,
+      "S7_s0_r0": 35.28558599996312,
+      "S8_s0_r0": 34.542959705489196,
+      "S9_s0_r0": 34.542274890801195
+    },
+    "rehab_proxy_mean": 34.507180739001605,
+    "outcome_correlations": {},
+    "notes": [
+      "no_per_subject_clinical_table_rpi_equals_mes_heuristic",
+      "Liu2024 parquet subjects: 14."
+    ]
+  },
+  "disclaimer": "Research validation on open acute-stroke MI data (Liu2024). Not FDA/CE cleared; not a substitute for prospective FMA-linked clinical trials."
+}

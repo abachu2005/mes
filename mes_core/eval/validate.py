@@ -51,11 +51,12 @@ def _trial_features_and_posterior(
     trials: list[ParquetTrial],
     *,
     population_baseline: SubjectBaseline,
+    cohort: str = "healthy",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return z_features (n,4), p_model, labels, mes_scores."""
     ch = list(OPENBCI_MONTAGE_16)
     sfreq = TARGET_SFREQ
-    weights = load_mes_weights("right_hand")
+    weights = load_mes_weights("right_hand", cohort=cohort)
 
     z_list: list[np.ndarray] = []
     p_list: list[float] = []
@@ -65,11 +66,11 @@ def _trial_features_and_posterior(
     # Group rest epochs per subject for baseline
     by_subj: dict[str, list[np.ndarray]] = {}
     for t in trials:
-        if t.label == "rest":
+        if t.label in ("rest", "break"):
             by_subj.setdefault(t.subject, []).append(t.X[None, ...])
 
     for t in trials:
-        if t.label not in ("right_hand", "rest"):
+        if t.label not in ("right_hand", "rest", "break"):
             continue
         rest_stack = None
         if by_subj.get(t.subject):
@@ -81,7 +82,7 @@ def _trial_features_and_posterior(
         )
         x = t.X[None, ...]
         try:
-            p, _ = resolve_session_posterior(x, "right_hand")
+            p, _ = resolve_session_posterior(x, "right_hand", cohort=cohort)
             p_val = float(p[0])
         except Exception:
             p_val = 0.5
@@ -107,16 +108,24 @@ def run_validation(
     *,
     prefix: str = "physionet_",
     max_files: int | None = 30,
+    cohort: str = "healthy",
 ) -> ValidationReport:
     """Compare posteriors, MES, and accuracy-only baselines on labeled parquet."""
     from mes_core.artifacts import load_population_baseline
 
-    trials = load_parquet_dir(data_dir, prefix=prefix, max_files=max_files)
+    trials = load_parquet_dir(
+        data_dir,
+        prefix=prefix,
+        labels={"right_hand", "rest", "break"},
+        max_files=max_files,
+    )
     if len(trials) < 20:
         raise RuntimeError(f"Need >=20 trials, got {len(trials)}")
 
-    pop_bl = load_population_baseline("right_hand")
-    z, p_model, labels, mes_scores = _trial_features_and_posterior(trials, population_baseline=pop_bl)
+    pop_bl = load_population_baseline("right_hand", cohort=cohort)
+    z, p_model, labels, mes_scores = _trial_features_and_posterior(
+        trials, population_baseline=pop_bl, cohort=cohort
+    )
 
     notes: list[str] = []
     models: list[ModelEvalRow] = []

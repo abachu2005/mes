@@ -67,7 +67,7 @@ def fit_from_trials(
 
         x = t.X[None, ...]
         try:
-            p, _ = resolve_session_posterior(x, "right_hand")
+            p, _ = resolve_session_posterior(x, "right_hand", cohort=cohort)
             p_val = float(p[0])
         except Exception:
             p_val = 0.5

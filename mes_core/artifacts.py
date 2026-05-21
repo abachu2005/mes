@@ -37,10 +37,15 @@ def load_mes_weights(task: str = "right_hand", *, cohort: str = "healthy") -> Me
         return MesWeights.default()
 
 
-def load_population_baseline(task: str = "right_hand") -> SubjectBaseline:
+def load_population_baseline(
+    task: str = "right_hand", *, cohort: str = "healthy"
+) -> SubjectBaseline:
     """Population rest baseline shipped with weights (optional)."""
     key = "right_hand" if "right" in task else task
-    filename = WEIGHTS_FILES.get(key, WEIGHTS_FILES["right_hand"])
+    if cohort == "stroke" and f"{key}_stroke" in WEIGHTS_FILES:
+        filename = WEIGHTS_FILES[f"{key}_stroke"]
+    else:
+        filename = WEIGHTS_FILES.get(key, WEIGHTS_FILES["right_hand"])
     try:
         raw = resources.files("mes_core.data").joinpath(filename).read_text(encoding="utf-8")
         data = json.loads(raw)
