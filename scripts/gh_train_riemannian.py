@@ -107,9 +107,10 @@ def train(data_dir: Path, out_dir: Path) -> None:
         "trained_on": "github_actions",
     }
     (out_dir / "riemannian_lr_right_hand.json").write_text(json.dumps(meta, indent=2))
+    cov_est = getattr(cov_tr, "estimator_", None) or cov_tr.estimator
     np.savez(
         str(out_dir / "riemannian_lr_frontend.npz"),
-        cov_estimator=np.array([cov_tr.estimator_], dtype=object),
+        cov_estimator=np.array([cov_est], dtype=object),
         ts_reference=ts.reference_,
     )
     print("Wrote", onnx_path)

@@ -83,13 +83,51 @@ jobs:
           pip install -e ".[train]"
           pip install skl2onnx
 
+      - name: Check for existing processed parquet on HF
+        id: hf_processed
+        run: |
+          python <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          files = api.list_repo_files(os.environ["HF_DATASET_REPO"], repo_type="dataset")
+          n = sum(1 for f in files if f.startswith("processed/") and f.endswith(".parquet"))
+          print(f"processed_parquet_count={n}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"count={n}\n")
+              out.write(f"skip_preprocess={'true' if n >= 50 else 'false'}\n")
+          PY
+
       - name: Preprocess PhysioNet → parquet
+        if: steps.hf_processed.outputs.skip_preprocess != 'true'
         run: |
           python scripts/gh_preprocess_physionet.py \
             --out /tmp/mes-out/processed \
             --subjects "${{ github.event.inputs.subjects || '30' }}"
 
+      - name: Download processed parquet from HF
+        if: steps.hf_processed.outputs.skip_preprocess == 'true'
+        run: |
+          python <<'PY'
+          import os
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+          root = Path(snapshot_download(
+              repo_id=os.environ["HF_DATASET_REPO"],
+              repo_type="dataset",
+              allow_patterns=["processed/*.parquet"],
+              token=os.environ["HF_TOKEN"],
+          ))
+          dst = Path("/tmp/mes-out/processed")
+          dst.mkdir(parents=True, exist_ok=True)
+          src = root / "processed"
+          for f in src.glob("*.parquet"):
+              (dst / f.name).symlink_to(f)
+          print(f"Linked {len(list(dst.glob('*.parquet')))} parquet files")
+          PY
+
       - name: Upload processed data to HF
+        if: steps.hf_processed.outputs.skip_preprocess != 'true'
         run: |
           python scripts/hf_sync.py \
             --local-dir /tmp/mes-out \
