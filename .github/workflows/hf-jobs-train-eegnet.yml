@@ -85,6 +85,20 @@ jobs:
             -l mes=eegnet \
             -l source=hf-jobs
 
+      - name: Verify EEGNet ONNX on Hub
+        run: |
+          python <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          files = api.list_repo_files(os.environ["HF_MODEL_REPO"], repo_type="model")
+          need = {"eegnet_right_hand.onnx", "riemannian_lr_right_hand.onnx"}
+          missing = need - set(files)
+          if missing:
+              raise SystemExit(f"Missing on Hub: {sorted(missing)}")
+          print("OK:", sorted(need))
+          PY
+
       - name: Done
         run: |
           echo "::notice::EEGNet model published to https://huggingface.co/${HF_MODEL_REPO}"

@@ -61,15 +61,16 @@ def export_torch_eegnet(
     dummy = torch.zeros(1, n_channels, n_samples, dtype=torch.float32)
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    torch.onnx.export(
-        model,
-        dummy,
-        str(out),
-        input_names=["X"],
-        output_names=["proba"],
-        dynamic_axes={"X": {0: "batch"}, "proba": {0: "batch"}},
-        opset_version=17,
-    )
+    export_kwargs = {
+        "input_names": ["X"],
+        "output_names": ["proba"],
+        "dynamic_axes": {"X": {0: "batch"}, "proba": {0: "batch"}},
+        "opset_version": 17,
+    }
+    try:
+        torch.onnx.export(model, dummy, str(out), dynamo=False, **export_kwargs)
+    except TypeError:
+        torch.onnx.export(model, dummy, str(out), **export_kwargs)
     if metadata:
         out.with_suffix(".json").write_text(json.dumps(metadata, indent=2))
     return out

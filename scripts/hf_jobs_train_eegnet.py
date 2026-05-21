@@ -148,17 +148,20 @@ def train_eegnet() -> tuple[Path, Path]:
 
     OUT.mkdir(parents=True, exist_ok=True)
     final_model.eval()
-    dummy = torch.zeros(1, N_CH, TARGET_T, dtype=torch.float32, device=device)
+    export_model = final_model.cpu()
+    dummy = torch.zeros(1, N_CH, TARGET_T, dtype=torch.float32)
     onnx_path = OUT / "eegnet_right_hand.onnx"
-    torch.onnx.export(
-        final_model,
-        dummy,
-        str(onnx_path),
-        input_names=["X"],
-        output_names=["proba"],
-        dynamic_axes={"X": {0: "batch"}, "proba": {0: "batch"}},
-        opset_version=17,
-    )
+    export_kwargs: dict = {
+        "input_names": ["X"],
+        "output_names": ["proba"],
+        "dynamic_axes": {"X": {0: "batch"}, "proba": {0: "batch"}},
+        "opset_version": 17,
+    }
+    # PyTorch 2.x defaults to dynamo exporter; legacy path is more reliable for EEGNet.
+    try:
+        torch.onnx.export(export_model, dummy, str(onnx_path), dynamo=False, **export_kwargs)
+    except TypeError:
+        torch.onnx.export(export_model, dummy, str(onnx_path), **export_kwargs)
     meta = {
         "model": "eegnet_v4",
         "task": "right_hand_vs_rest",
