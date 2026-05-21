@@ -6,7 +6,7 @@ MES is wired for **MOABB** downloads plus your own uploads. This page lists what
 
 [`abachu2005/mes-eeg-processed`](https://huggingface.co/datasets/abachu2005/mes-eeg-processed) currently has **PhysioNet EEG Motor Movement/Imagery only** (~120 parquet files: `physionet_S##_mi.parquet` / `physionet_S##_rest.parquet`).
 
-Stroke parquet (`liu2024_*`, `liu2025_*`) is **not uploaded yet**. The stroke weight bundle in `mes_core/data/mes_weights_right_hand_stroke.json` was fit with a fallback to PhysioNet when stroke parquet is sparse (`scripts/fit_mes_weights.py`).
+Stroke parquet (`liu2024_*`, `liu2025_*`) is produced locally via `scripts/preprocess_moabb_datasets.py --stroke` and published with `scripts/publish_hf_stroke_assets.py` (requires `HF_TOKEN`). Per-subject clinical fields: `mes_core/data/liu2024_clinical.tsv` (from Figshare v4 `participants.tsv`, ~3.5 KB).
 
 ## Stroke & rehab EEG (open, via MOABB)
 

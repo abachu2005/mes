@@ -1,0 +1,59 @@
+name: publish-stroke-hf
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "data/processed_stroke/**"
+      - "mes_core/data/models/**"
+      - "mes_core/data/benchmarks.json"
+      - "mes_core/data/liu2024_clinical.tsv"
+      - "scripts/publish_hf_stroke_assets.py"
+
+jobs:
+  publish:
+    if: github.repository_owner != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -e ".[train]"
+          pip install huggingface_hub
+      - name: Preprocess Liu (if no local parquet in runner)
+        run: |
+          if [ "$(ls -1 data/processed_stroke/liu2024_*.parquet 2>/dev/null | wc -l)" -lt 10 ]; then
+            python scripts/preprocess_moabb_datasets.py --stroke --out data/processed_stroke --max-subjects 50
+          fi
+      - name: Stroke pipeline (train + benchmarks)
+        run: |
+          python scripts/run_stroke_pipeline.py --data-dir data/processed_stroke --min-files 20
+      - name: Fetch clinical TSV
+        continue-on-error: true
+        run: |
+          python scripts/fetch_liu2024_clinical.py --download \
+            --zip-path /tmp/liu2024_sourcedata.zip -o mes_core/data/liu2024_clinical.tsv
+      - name: Clinical validation report
+        continue-on-error: true
+        run: |
+          python scripts/run_clinical_validation.py --data-dir data/processed_stroke \
+            --clinical-tsv mes_core/data/liu2024_clinical.tsv
+      - name: Train EEGNet stroke (CPU)
+        continue-on-error: true
+        run: |
+          pip install torch braindecode --quiet
+          python scripts/train_eegnet_stroke.py --data-dir data/processed_stroke --epochs 40
+      - name: Publish to Hugging Face
+        run: |
+          python scripts/publish_hf_stroke_assets.py --data-dir data/processed_stroke

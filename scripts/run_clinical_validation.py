@@ -81,6 +81,10 @@ def main() -> int:
 
     outcome_corr: dict = {}
     if clinical:
+        rpi_by_base: dict[str, float] = {}
+        for key, val in rpi_by_subj.items():
+            base = key.split("_")[0] if "_" in key else key
+            rpi_by_base[base] = float(val)
         for field in ("nihss", "mbi", "mrs"):
             mapped = {
                 code: {field: vals.get(field)}
@@ -89,7 +93,7 @@ def main() -> int:
             }
             if mapped:
                 outcome_corr[field] = correlate_mes_with_outcomes(
-                    rpi_by_subj, mapped, outcome_key=field
+                    rpi_by_base, mapped, outcome_key=field
                 )
 
     report = ClinicalValidationReport(

@@ -63,6 +63,7 @@ def preprocess_bci_iv_2b(out_dir: Path, *, subjects: list[int] | None = None) ->
                 tmax=4,
                 baseline=(-1.5, -0.5),
                 preload=True,
+                event_repeated="drop",
                 verbose="ERROR",
             )
             label_map = {k: i for i, k in enumerate(event_id)}
@@ -80,6 +81,7 @@ def _export_mi_epochs(
     subject_tag: str,
     cfg: Any,
     label_map: dict[str, int],
+    skip_preprocess: bool = False,
 ) -> int:
     import mne
 
@@ -88,7 +90,7 @@ def _export_mi_epochs(
 
     n = 0
     for sub_id, sess_id, run_id, raw in _iter_moabb_raws(raw_dict):
-        raw_pp = preprocess_raw(raw, cfg)
+        raw_pp = raw if skip_preprocess else preprocess_raw(raw, cfg)
         events, event_id = mne.events_from_annotations(raw_pp, verbose="ERROR")
         # Keep only events we can label.
         filt = {k: v for k, v in label_map.items() if k in event_id}
@@ -102,6 +104,7 @@ def _export_mi_epochs(
             tmax=4,
             baseline=(-1.5, -0.5),
             preload=True,
+            event_repeated="drop",
             verbose="ERROR",
         )
         sid = f"{subject_tag}{sub_id}_s{sess_id}_r{run_id}"
@@ -143,12 +146,13 @@ def preprocess_liu2024(out_dir: Path, *, max_subjects: int = 50) -> int:
             if "right_hand" not in label_map and "left_hand" not in label_map:
                 continue
             n += _export_mi_epochs(
-                {sub_id: {sess_id: {run_id: raw}}},
+                {sub_id: {sess_id: {run_id: raw_pp}}},
                 out_dir=out_dir,
                 dataset_prefix="liu2024",
                 subject_tag="S",
                 cfg=cfg,
                 label_map=label_map,
+                skip_preprocess=True,
             )
     print(f"Liu2024 stroke: {n} parquet exports -> {out_dir}")
     return n
@@ -194,12 +198,13 @@ def preprocess_liu2025(out_dir: Path, *, max_subjects: int = 27) -> int:
                         label_map["rest"] = code
                         break
             n += _export_mi_epochs(
-                {sub_id: {sess_id: {run_id: raw}}},
+                {sub_id: {sess_id: {run_id: raw_pp}}},
                 out_dir=out_dir,
                 dataset_prefix="liu2025",
                 subject_tag="S",
                 cfg=cfg,
                 label_map=label_map,
+                skip_preprocess=True,
             )
     print(f"Liu2025 stroke: {n} parquet exports -> {out_dir}")
     return n

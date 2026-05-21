@@ -160,6 +160,7 @@ def score_epochs(
         weights=weights,
         p_model=p_model,
         rest_epochs_data=rest_data,
+        paralysis_side=paralysis_side if cohort == "stroke" else None,
     )
     rel = reliability_tier(sq, baseline_kind=baseline_kind, posterior_entropy=p_entropy)
 

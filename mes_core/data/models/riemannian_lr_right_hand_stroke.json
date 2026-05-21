@@ -1,0 +1,16 @@
+{
+  "model": "riemannian_lr",
+  "task": "right_hand_vs_rest",
+  "cohort": "stroke",
+  "input_kind": "tangent_space",
+  "n_features": 136,
+  "n_classes": 2,
+  "loso_acc": 0.6258802948177463,
+  "n_train": 2951,
+  "n_subjects": 50,
+  "channels": 16,
+  "sfreq": 125.0,
+  "epoch_samples": 750,
+  "trained_on": "github_actions",
+  "data_prefix": "liu2024_"
+}
