@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Hugging Face Space (demo)
+    url: https://huggingface.co/spaces/abachu2005/mes
+    about: Live demo and cold-start notes
+  - name: Documentation
+    url: https://github.com/abachu2005/mes/tree/main/docs
+    about: Methods, datasets, releasing, clinical validation

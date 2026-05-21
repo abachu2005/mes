@@ -4,23 +4,27 @@ message: >-
   If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
-  - name: MES Project Authors
-    affiliation: TBD
+  - name: MES Contributors
 repository-code: 'https://github.com/abachu2005/mes'
 url: 'https://huggingface.co/spaces/abachu2005/mes'
-license: Apache-2.0
-version: 0.2.0
+license: MIT
+version: 0.2.1
 keywords:
   - EEG
   - stroke rehabilitation
   - motor imagery
   - brain-computer interface
   - open science
+identifiers:
+  - type: url
+    value: 'https://github.com/abachu2005/mes/releases'
+    description: GitHub releases (Zenodo DOI is minted per release — see release notes)
 preferred-citation:
   type: article
   title: 'MES: Motor Engagement Signal software for open EEG rehabilitation research'
   authors:
-    - name: MES Project Authors
+    - name: MES Contributors
   year: 2026
-  journal: Journal of Open Source Software
-  notes: Submit via JOSS; update DOI after acceptance and Zenodo archive.
+  notes: >-
+    After enabling Zenodo–GitHub integration, add a release DOI here, e.g.
+    10.5281/zenodo.XXXXXXX. See docs/releasing.md.

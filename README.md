@@ -78,6 +78,35 @@ make docker-run     # builds image and serves on http://localhost:7860
 - HF Space free-tier sleeps after 48 h of inactivity.
 - ICA quality degrades at low channel counts; we run ICA on the full source montage before downsampling to mitigate this.
 
+## Citation and archiving
+
+- **Source & releases:** [github.com/abachu2005/mes](https://github.com/abachu2005/mes)
+- **Software metadata:** [`CITATION.cff`](CITATION.cff) (Citation File Format)
+- **Zenodo:** Enable [GitHub integration](https://zenodo.org/account/settings/github/) on this repo; each **GitHub release** gets a DOI. See [`docs/releasing.md`](docs/releasing.md).
+
+Example (replace `XXXXXXX` with the Zenodo ID after your first release):
+
+```bibtex
+@software{mes2026,
+  title   = {MES: Motor Engagement Signal},
+  author  = {{MES Contributors}},
+  year    = {2026},
+  url     = {https://github.com/abachu2005/mes},
+  doi     = {10.5281/zenodo.XXXXXXX},
+  version = {0.2.1},
+  license = {MIT}
+}
+```
+
+## Distribution
+
+| Channel | Use |
+|---------|-----|
+| **Git clone + editable install** | Development and scoring (`pip install -e ".[backend,dev]"`) |
+| **Hugging Face Space** | Web demo and API |
+| **Docker** | `make docker-run` |
+| **PyPI / Bioconda** | Not used — install from GitHub |
+
 ## License
 
-Apache-2.0. See [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE).

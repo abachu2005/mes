@@ -1,0 +1,37 @@
+{
+  "title": "MES: Motor Engagement Signal",
+  "description": "Open-source EEG software and web application for motor engagement scoring (MES, 0–100) in motor imagery rehabilitation research. Repository: preprocessing, ONNX inference, stroke/healthy cohorts, validation, and Hugging Face demo.",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "MES Contributors",
+      "affiliation": "Open Source"
+    }
+  ],
+  "keywords": [
+    "electroencephalography",
+    "stroke",
+    "motor imagery",
+    "rehabilitation",
+    "brain-computer interface"
+  ],
+  "license": "mit",
+  "communities": [
+    {
+      "identifier": "biosoftware"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementedBy",
+      "identifier": "https://github.com/abachu2005/mes",
+      "scheme": "url"
+    },
+    {
+      "relation": "isDocumentedBy",
+      "identifier": "https://huggingface.co/spaces/abachu2005/mes",
+      "scheme": "url"
+    }
+  ],
+  "version": "0.2.1"
+}

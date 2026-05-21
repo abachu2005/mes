@@ -1,0 +1,32 @@
+name: Bug report
+description: Something broke in the app, CLI, or pipeline
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Research use only.** Include version and repro steps; do not attach PHI.
+  - type: input
+    id: version
+    attributes:
+      label: MES version
+      placeholder: "0.2.1 or git commit"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
