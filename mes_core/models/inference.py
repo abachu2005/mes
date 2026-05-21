@@ -122,13 +122,23 @@ def _predict_target_proba(clf: OnnxClassifier, epoch_data: np.ndarray) -> np.nda
     return p[:, 1] if p.ndim == 2 and p.shape[1] > 1 else p.ravel()
 
 
+def _fit_epoch_window(epoch_data: np.ndarray, n_times: int = 750) -> np.ndarray:
+    """Crop or pad the time axis so ONNX models see the training window length."""
+    x = np.asarray(epoch_data, dtype=np.float32)
+    n = x.shape[-1]
+    if n >= n_times:
+        return x[..., :n_times]
+    pad = np.zeros(x.shape[:-1] + (n_times - n,), dtype=x.dtype)
+    return np.concatenate([x, pad], axis=-1)
+
+
 def resolve_session_posterior(epoch_data: np.ndarray, task: str) -> tuple[np.ndarray, str]:
     """Load available ONNX classifiers for *task* and combine into p_model.
 
     Uses the mean posterior when both Riemannian and EEGNet are on HF Hub;
     otherwise uses whichever is available. Raises if none load.
     """
-    epoch_data = np.asarray(epoch_data)
+    epoch_data = _fit_epoch_window(np.asarray(epoch_data))
     specs = _task_models(task)
     posteriors: list[np.ndarray] = []
     tags: list[str] = []
