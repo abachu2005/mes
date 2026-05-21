@@ -141,17 +141,18 @@ def check_hf_repos(report: PreflightReport, *, need_parquet: bool = False) -> No
             create_repo(repo_id=repo, repo_type=rtype, exist_ok=True, token=token)
             files = api.list_repo_files(repo, repo_type=rtype)
             parquet = [f for f in files if f.endswith(".parquet")]
+            processed_parquet = [f for f in parquet if f.startswith("processed/")]
             onnx = [f for f in files if f.endswith(".onnx")]
             detail = f"{len(files)} file(s)"
             if rtype == "dataset":
-                detail += f", {len(parquet)} parquet"
-                if need_parquet and not parquet:
-                    report.add(
-                        f"hf:repo:{repo}",
-                        False,
-                        "repo exists but no parquet — run mes-train-pipeline first",
-                        "gh workflow run mes-train-pipeline.yml",
-                    )
+                detail += f", {len(processed_parquet)} processed/*.parquet"
+                if need_parquet and not processed_parquet:
+                    hint = "gh workflow run mes-train-pipeline.yml"
+                    if parquet:
+                        msg = "parquet at repo root but not under processed/ — re-run mes-train-pipeline"
+                    else:
+                        msg = "repo exists but no processed/*.parquet — run mes-train-pipeline first"
+                    report.add(f"hf:repo:{repo}", False, msg, hint)
                     continue
             else:
                 detail += f", {len(onnx)} onnx"

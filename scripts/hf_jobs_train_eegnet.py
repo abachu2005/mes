@@ -96,7 +96,8 @@ def train_eegnet() -> tuple[Path, Path]:
     x = np.stack([r["X"] for r in train_rows])
     y = np.array([r["y"] for r in train_rows])
     subj = np.array([r["subject"] for r in train_rows])
-    print("X:", x.shape, "y dist:", dict(zip(*np.unique(y, return_counts=True), strict=False)))
+    uniq, counts = np.unique(y, return_counts=True)
+    print("X:", x.shape, "y dist:", dict(zip(uniq, counts, strict=False)))
 
     def make_model(n_classes: int = 2) -> EEGNetv4:
         return EEGNetv4(n_chans=N_CH, n_outputs=n_classes, n_times=TARGET_T, drop_prob=0.5).to(device)

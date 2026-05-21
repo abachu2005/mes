@@ -75,8 +75,11 @@ def upload_processed_dataset(local_dir: str | Path, *, commit_message: str = "pu
 
     api = HfApi(token=_hf_token())
     create_repo(repo_id=HF_REPOS.dataset, repo_type="dataset", exist_ok=True, token=_hf_token())
+    local = Path(local_dir)
+    path_in_repo = "processed" if local.name == "processed" else ""
     commit = api.upload_folder(
-        folder_path=str(local_dir),
+        folder_path=str(local),
+        path_in_repo=path_in_repo,
         repo_id=HF_REPOS.dataset,
         repo_type="dataset",
         commit_message=commit_message,

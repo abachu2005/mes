@@ -51,6 +51,8 @@ def main() -> int:
     api = HfApi(token=token)
     create_repo(repo_id=args.repo_id, repo_type=args.repo_type, exist_ok=True, token=token)
 
+    path_prefix = args.subdir.strip("/") if args.subdir else ""
+
     if args.pattern:
         files = sorted(upload_path.rglob(args.pattern.lstrip("/")))
         if not files:
@@ -58,19 +60,22 @@ def main() -> int:
             return 1
         for f in files:
             rel = f.relative_to(upload_path)
-            print(f"  upload {rel} -> {args.repo_id}")
+            path_in_repo = f"{path_prefix}/{rel}" if path_prefix else str(rel)
+            print(f"  upload {path_in_repo} -> {args.repo_id}")
             api.upload_file(
                 path_or_fileobj=str(f),
-                path_in_repo=str(rel),
+                path_in_repo=path_in_repo,
                 repo_id=args.repo_id,
                 repo_type=args.repo_type,
                 commit_message=args.message,
             )
     else:
         n = len(list(upload_path.rglob("*")))
-        print(f"Uploading {upload_path} ({n} entries) -> {args.repo_id} ({args.repo_type})")
+        dest = f"{path_prefix}/" if path_prefix else "(repo root)"
+        print(f"Uploading {upload_path} ({n} entries) -> {args.repo_id}/{dest} ({args.repo_type})")
         api.upload_folder(
             folder_path=str(upload_path),
+            path_in_repo=path_prefix,
             repo_id=args.repo_id,
             repo_type=args.repo_type,
             commit_message=args.message,
