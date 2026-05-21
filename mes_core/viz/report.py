@@ -58,7 +58,6 @@ def _gauge_figure(value: float):  # type: ignore[no-untyped-def]
     ax.set_theta_direction(-1)
     ax.set_thetamin(0)
     ax.set_thetamax(180)
-    theta = np.linspace(0, np.pi, 200)
     ax.barh(1.0, np.pi, left=0.0, height=0.25, color="#e6eaf2", edgecolor="none")
     ax.barh(1.0, value / 100.0 * np.pi, left=0.0, height=0.25, color="#0d9488", edgecolor="none")
     ax.set_yticks([])

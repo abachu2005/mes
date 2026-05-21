@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import io
 import os
-import tempfile
 import time
 
 import pytest
@@ -18,6 +16,7 @@ def client(tmp_path_factory: pytest.TempPathFactory):
     os.environ["DATABASE_URL"] = f"sqlite:///{db_dir}/test.db"
     # Reload module so the engine uses the new URL.
     import importlib
+
     from backend.app.db import session as session_mod
     importlib.reload(session_mod)
     from backend.app import main as main_mod
@@ -65,6 +64,7 @@ def test_session_upload_and_pipeline_round_trip(client: TestClient, tmp_path) ->
     # Generate a small synthetic EDF on disk.
     import mne
     import numpy as np
+
     from mes_core.config import OPENBCI_MONTAGE_16
 
     sfreq = 125.0

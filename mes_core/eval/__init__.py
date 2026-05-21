@@ -1,17 +1,21 @@
-"""Validation: within-subject CV, LOSO, ICC, longitudinal regression."""
+"""Validation: metrics, parquet loaders, and benchmark harness."""
 
 from mes_core.eval.metrics import (
-    icc_3_1,
-    cohen_d,
-    paired_wilcoxon,
     brier_score,
+    cohen_d,
+    icc_3_1,
+    paired_wilcoxon,
     spearman_corr,
 )
+from mes_core.eval.validate import ValidationReport, run_validation, write_validation_report
 
 __all__ = [
-    "icc_3_1",
-    "cohen_d",
-    "paired_wilcoxon",
+    "ValidationReport",
     "brier_score",
+    "cohen_d",
+    "icc_3_1",
+    "paired_wilcoxon",
+    "run_validation",
     "spearman_corr",
+    "write_validation_report",
 ]

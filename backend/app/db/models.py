@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import uuid
 
-from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -29,7 +29,7 @@ class Participant(Base):
     notes: Mapped[str | None] = mapped_column(Text, default="")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
-    sessions: Mapped[list["Session"]] = relationship(
+    sessions: Mapped[list[Session]] = relationship(
         "Session", back_populates="participant", cascade="all, delete-orphan"
     )
 
@@ -55,7 +55,7 @@ class Session(Base):
     is_demo: Mapped[int] = mapped_column(Integer, default=0)
 
     participant: Mapped[Participant] = relationship("Participant", back_populates="sessions")
-    score: Mapped["MesScore"] = relationship(
+    score: Mapped[MesScore] = relationship(
         "MesScore", back_populates="session", uselist=False, cascade="all, delete-orphan"
     )
 

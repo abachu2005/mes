@@ -45,5 +45,8 @@ nav:
   - Clinical interpretation: clinical.md
   - Hardware SOP: hardware.md
   - Benchmarks: benchmarks.md
+  - CLI: cli.md
+  - Related software: comparison.md
+  - JOSS roadmap: joss-roadmap.md
   - API reference: api.md
   - Limitations: limitations.md

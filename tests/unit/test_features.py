@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from mes_core.config import BANDS
 from mes_core.features.bandpower import band_power, erd_percent
@@ -59,7 +58,7 @@ def test_lateralization_handles_missing_channels() -> None:
 def test_mrcp_amplitude_signs_with_negative_deflection() -> None:
     sfreq = 125.0
     tmin = -2.0
-    n = int(round((4.0 - tmin) * sfreq))
+    n = round((4.0 - tmin) * sfreq)
     times = tmin + np.arange(n) / sfreq
     sig = np.where(times > 0, -1.5 * np.exp(-times.clip(0)), 0.0)
     epochs = sig[None, None, :]  # (1 epoch, 1 ch, n_times)

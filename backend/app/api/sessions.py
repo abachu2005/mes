@@ -17,7 +17,8 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from backend.app.db.models import Participant, Session as DbSession
+from backend.app.db.models import Participant
+from backend.app.db.models import Session as DbSession
 from backend.app.db.session import get_session
 from backend.app.schemas import ScoreOut, SessionOut
 from backend.app.storage import get_local_path, store_upload

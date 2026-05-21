@@ -5,7 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.app.db.models import MesScore, Participant, Session as DbSession
+from backend.app.db.models import MesScore, Participant
+from backend.app.db.models import Session as DbSession
 from backend.app.db.session import get_session
 from backend.app.schemas import (
     LongitudinalPoint,

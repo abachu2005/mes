@@ -6,7 +6,7 @@ positive values = power reduction = desynchronization = motor engagement.
 
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 from scipy.signal import welch
@@ -30,7 +30,7 @@ def band_power(
         raise ValueError("data must have at least 2 dims (channels, time)")
     n_times = data.shape[-1]
     if nperseg is None:
-        nperseg = min(n_times, int(round(sfreq)))
+        nperseg = min(n_times, round(sfreq))
     nperseg = max(8, min(nperseg, n_times))
 
     freqs, psd = welch(

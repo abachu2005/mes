@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mes"
-version = "0.1.0"
+version = "0.2.0"
 description = "Motor Engagement Signal: quantifying neural drive for movement recovery from EEG."
 authors = [{ name = "MES Project" }]
 license = { text = "Apache-2.0" }
@@ -76,6 +76,7 @@ include = ["mes_core*", "backend*"]
 
 [tool.setuptools.package-data]
 "backend" = ["app/templates/**/*", "app/static/**/*"]
+"mes_core" = ["data/*.json"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -112,10 +113,11 @@ extend-exclude = ["notebooks", "tests/fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "C4", "RUF"]
-ignore = ["E501", "B008", "N803", "N806"]
+ignore = ["E501", "B008", "N803", "N806", "SIM105", "RUF005"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["N802", "N803", "N806"]
+"scripts/**" = ["E402"]
 
 [tool.mypy]
 python_version = "3.11"

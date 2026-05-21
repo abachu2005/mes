@@ -6,7 +6,6 @@ Executed via FastAPI's BackgroundTasks. Idempotent on session_id.
 from __future__ import annotations
 
 import datetime as dt
-import os
 import tempfile
 import traceback
 from pathlib import Path
@@ -14,16 +13,15 @@ from pathlib import Path
 import numpy as np
 import structlog
 
-from backend.app.db.models import MesScore, Session as DbSession
+from backend.app.db.models import MesScore
+from backend.app.db.models import Session as DbSession
 from backend.app.db.session import session_scope
-from backend.app.storage import store_report, store_upload
-from mes_core.config import OPENBCI_MONTAGE_16, TARGET_SFREQ
+from backend.app.storage import store_report
 from mes_core.features.bandpower import erd_percent
 from mes_core.features.lateralization import default_contra_ipsi_for_task, lateralization_index
 from mes_core.io import load_eeg
-from mes_core.models.inference import resolve_session_posterior
+from mes_core.pipeline import score_epochs
 from mes_core.preprocessing import PreprocessConfig, epoch_raw, preprocess_raw
-from mes_core.scoring import MesWeights, SubjectBaseline, compute_mes
 from mes_core.viz.report import ReportContext, build_session_report_html, render_pdf
 from mes_core.viz.topomap import scalp_topomap_payload
 
@@ -41,30 +39,6 @@ def _update(session_id: str, **fields: object) -> None:
         db.commit()
     finally:
         db.close()
-
-
-def _resolve_p_model(epoch_data: np.ndarray, task: str) -> tuple[np.ndarray, str | None]:
-    """Load Riemannian and/or EEGNet ONNX models; ensemble mean when both exist."""
-    try:
-        return resolve_session_posterior(epoch_data, task)
-    except Exception as e:  # noqa: BLE001
-        log.warning("model_unavailable_using_heuristic", err=str(e))
-        # Heuristic: contralateral mu-band ERD strength mapped through a logistic.
-        from mes_core.config import BANDS
-
-        ch_names = list(OPENBCI_MONTAGE_16)
-        contra_chs, _ipsi_chs = default_contra_ipsi_for_task(task)
-        contra_idx = [ch_names.index(c) for c in contra_chs if c in ch_names]
-        if not contra_idx:
-            return np.full(epoch_data.shape[0], 0.5), None
-        half = epoch_data.shape[-1] // 2
-        baseline = epoch_data[..., :half]
-        task_seg = epoch_data[..., half:]
-        erd = erd_percent(task_seg, baseline, TARGET_SFREQ, BANDS["mu"])
-        contra_erd = erd[..., contra_idx].mean(axis=-1)
-        # Scale to a posterior-like value (centered around 50% ERD -> 0.5 prob).
-        p = 1.0 / (1.0 + np.exp(-(contra_erd - 30) / 20.0))
-        return p, "heuristic"
 
 
 def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
@@ -93,20 +67,16 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
             data = arr[None, ...]
         _update(session_id, progress=65)
 
-        p_model, model_sha = _resolve_p_model(data, task)
-
-        baseline = SubjectBaseline.zeros(4)
-        weights = MesWeights.default()
         ch_names = raw_pp.info["ch_names"]
-        result = compute_mes(
-            epochs_data=data,
-            sfreq=raw_pp.info["sfreq"],
+        scored = score_epochs(
+            data,
+            sfreq=float(raw_pp.info["sfreq"]),
             ch_names=ch_names,
             task=task,
-            baseline=baseline,
-            weights=weights,
-            p_model=p_model,
+            use_onnx=True,
         )
+        result = scored.mes
+        model_sha = scored.model_sha
         _update(session_id, progress=80)
 
         # ERD topomap from feature contra
@@ -156,7 +126,7 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
                 sess.completed_at = dt.datetime.now(dt.UTC)
             db.commit()
         log.info("session_pipeline_done", session_id=session_id, mes_mean=result.summary["mes_mean"])
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.exception("session_pipeline_failed", session_id=session_id)
         _update(
             session_id,

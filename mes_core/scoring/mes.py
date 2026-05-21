@@ -28,7 +28,6 @@ from mes_core.features.bandpower import erd_percent
 from mes_core.features.lateralization import default_contra_ipsi_for_task, lateralization_index
 from mes_core.features.mrcp import mrcp_features
 
-
 # ---------------------------------------------------------------------------
 # Subject baseline (rest block stats)
 # ---------------------------------------------------------------------------
@@ -42,7 +41,7 @@ class SubjectBaseline:
     std: np.ndarray    # shape (n_features,)
 
     @classmethod
-    def zeros(cls, n_features: int = 4) -> "SubjectBaseline":
+    def zeros(cls, n_features: int = 4) -> SubjectBaseline:
         names = ("z_mu", "z_beta", "z_li", "z_mrcp")[:n_features]
         return cls(feature_names=names, mean=np.zeros(n_features), std=np.ones(n_features))
 
@@ -59,7 +58,7 @@ class SubjectBaseline:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "SubjectBaseline":
+    def from_dict(cls, d: dict[str, Any]) -> SubjectBaseline:
         return cls(
             feature_names=tuple(d["feature_names"]),
             mean=np.asarray(d["mean"], dtype=float),
@@ -111,7 +110,7 @@ class MesWeights:
     )
 
     @classmethod
-    def default(cls) -> "MesWeights":
+    def default(cls) -> MesWeights:
         return cls()
 
     def as_vector(self) -> np.ndarray:
@@ -121,7 +120,7 @@ class MesWeights:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "MesWeights":
+    def from_dict(cls, d: dict[str, Any]) -> MesWeights:
         d = dict(d)
         d.pop("feature_names", None)
         return cls(**d)

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: MES — Motor Engagement Signal
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - name: MES Project Authors
+    affiliation: TBD
+repository-code: 'https://github.com/abachu2005/mes'
+url: 'https://huggingface.co/spaces/abachu2005/mes'
+license: Apache-2.0
+version: 0.2.0
+keywords:
+  - EEG
+  - stroke rehabilitation
+  - motor imagery
+  - brain-computer interface
+  - open science
+preferred-citation:
+  type: article
+  title: 'MES: Motor Engagement Signal software for open EEG rehabilitation research'
+  authors:
+    - name: MES Project Authors
+  year: 2026
+  journal: Journal of Open Source Software
+  notes: Submit via JOSS; update DOI after acceptance and Zenodo archive.

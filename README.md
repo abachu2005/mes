@@ -59,7 +59,11 @@ OpenBCI Cyton + Daisy (16 channels @ 125 Hz). Electrode placement and recording 
 # Python 3.11 required.
 make install-dev
 make test
+mes score path/to/recording.edf    # CLI — ONNX ensemble + fitted weights
+mes validate --download            # benchmark MES vs posterior-only baselines
 ```
+
+See [`docs/cli.md`](docs/cli.md) and [`docs/joss-roadmap.md`](docs/joss-roadmap.md) for JOSS submission planning.
 
 Run the app locally (Docker):
 

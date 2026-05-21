@@ -6,12 +6,13 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.db.models import MesScore, Participant, Session as DbSession
+from backend.app.db.models import MesScore, Participant
+from backend.app.db.models import Session as DbSession
 from backend.app.db.session import get_session
-from backend.app.schemas import HealthOut, ScoreOut, SessionOut
+from backend.app.schemas import HealthOut, SessionOut
 from mes_core import __version__
 from mes_core.config import HF_REPOS, cache_root
 
@@ -48,7 +49,7 @@ def models() -> dict:
                                     token=os.environ.get("HF_TOKEN"))
                 info["benchmarks"] = json.loads(Path(p).read_text())
                 break
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         info["error"] = str(e)
     return info
 
@@ -95,9 +96,10 @@ def seed_demo(db: Session = Depends(get_session)) -> list[DbSession]:
         )
         db.add(s)
         db.flush()
+        import numpy as np
+
         from mes_core.config import OPENBCI_MONTAGE_16
         from mes_core.viz.topomap import scalp_topomap_payload
-        import numpy as np
 
         rng = np.random.default_rng(hash(code) & 0xFFFF)
         erd_vals = rng.normal(mes_mean / 2.0, 10, len(OPENBCI_MONTAGE_16))

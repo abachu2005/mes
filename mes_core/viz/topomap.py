@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 
-
 # Standard 10-20 2D positions (normalized to a unit head circle, x right, y up).
 # Source: MNE's standard_1020 layout, approximated for the 16-channel OpenBCI set.
 DEFAULT_POSITIONS_2D: dict[str, tuple[float, float]] = {

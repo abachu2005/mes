@@ -105,6 +105,11 @@ jobs:
           pip install -q 'huggingface_hub[cli]>=0.26'
           python scripts/publish_benchmarks.py
 
+      - name: Fit and upload MES weights bundle
+        run: |
+          pip install -e ".[train]"
+          python scripts/fit_mes_weights.py --download --max-files 40 --upload
+
       - name: Done
         run: |
           echo "::notice::EEGNet model published to https://huggingface.co/${HF_MODEL_REPO}"

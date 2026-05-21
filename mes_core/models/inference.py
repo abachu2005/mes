@@ -30,7 +30,7 @@ class OnnxClassifier:
     metadata: dict[str, Any]
 
     @classmethod
-    def from_path(cls, model_path: str | Path) -> "OnnxClassifier":
+    def from_path(cls, model_path: str | Path) -> OnnxClassifier:
         import onnxruntime as ort
 
         sess = ort.InferenceSession(
@@ -83,7 +83,9 @@ def load_onnx_model(filename: str) -> OnnxClassifier:
         log.warning("model_download_failed_falling_back_to_local", filename=filename, err=str(e))
         p = Path(filename)
         if not p.exists():
-            raise FileNotFoundError(f"Model {filename!r} not found locally or on HF Hub")
+            raise FileNotFoundError(
+                f"Model {filename!r} not found locally or on HF Hub"
+            ) from e
     return OnnxClassifier.from_path(p)
 
 
