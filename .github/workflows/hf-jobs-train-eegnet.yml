@@ -14,6 +14,11 @@ on:
         description: "Job timeout (e.g. 3h)"
         required: false
         default: 3h
+  push:
+    branches: [main]
+    paths:
+      - "scripts/hf_jobs_train_eegnet.py"
+      - ".github/workflows/hf-jobs-train-eegnet.yml"
   workflow_run:
     workflows: [mes-train-pipeline]
     types: [completed]
@@ -24,7 +29,8 @@ jobs:
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success')
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }}
@@ -44,10 +50,10 @@ jobs:
     needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 210
-    # Only auto-run after kaggle-chain when that workflow succeeded.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success')
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }}

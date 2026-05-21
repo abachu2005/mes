@@ -7,6 +7,7 @@
 #   "torch>=2.2,<3",
 #   "braindecode>=0.8,<1",
 #   "onnx>=1.16,<2",
+#   "onnxscript>=0.1",
 #   "scikit-learn>=1.4,<2",
 #   "huggingface_hub>=0.24,<1",
 # ]
