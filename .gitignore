@@ -43,6 +43,7 @@ data/
 !mes_core/data/
 mes_core/data/*
 !mes_core/data/*.json
+!mes_core/data/*.tsv
 !mes_core/data/models/
 !mes_core/data/models/**
 /models/

@@ -50,3 +50,27 @@ def default_contra_ipsi_for_task(task: str) -> tuple[list[str], list[str]]:
     if "foot" in t or "feet" in t or "gait" in t:
         return midline, midline
     return midline, midline
+
+
+def contra_ipsi_for_stroke(
+    task: str,
+    paralysis_side: str | None = None,
+) -> tuple[list[str], list[str]]:
+    """Contra/ipsi channels for stroke MI, optionally adjusted for hemiplegia side.
+
+    When the cued hand is the **non-paretic** hand, swap contra/ipsi so lateralization
+    index reflects engagement of the hemisphere that would drive the paretic limb.
+    """
+    contra, ipsi = default_contra_ipsi_for_task(task)
+    if not paralysis_side:
+        return contra, ipsi
+    p = paralysis_side.lower().strip()
+    paretic_left = p in ("left", "l", "left_hemiplegia", "left hemiplegia", "left hemiparesis")
+    paretic_right = p in ("right", "r", "right_hemiplegia", "right hemiplegia", "right hemiparesis")
+    task_right = "right" in task.lower()
+    task_left = "left" in task.lower()
+    if paretic_left and task_right:
+        return ipsi, contra
+    if paretic_right and task_left:
+        return ipsi, contra
+    return contra, ipsi

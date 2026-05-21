@@ -1,0 +1,51 @@
+participant_id	Gender	Age	Duration	paralysis_side	Handedness	IsFirstTime	StrokeLocation	nihss	mbi	mrs
+S1	male	45	1	right	right	yes	left pons	11	50	4
+S2	male	60	2	left	right	yes	pons	3	55	4
+S3	male	60	2	left	right	no	left cerebellum, bilateral paraventricular,right corona radiata	3	90	1
+S4	male	56	14	right	right	yes	left frontal parietal cortex,left centrum semiovale	6	90	3
+S5	female	44	4	left	right	yes	pons	4	60	4
+S6	male	66	6	left	left	no	pons	3	85	3
+S7	male	62	5	right	right	no	pons	2	100	1
+S8	male	64	5	left	right	yes	right basal ganglia	3	85	2
+S9	male	57	3	right	right	yes	left paraventricular	6	55	1
+S10	male	55	2	left	right	no	pons	3	55	0
+S11	male	31	7	left	right	yes	right paraventricular	5	55	4
+S12	male	58	1	right	right	yes	left medulla oblongata	1	100	1
+S13	male	46	3	right	right	no	left paraventricular	9	55	4
+S14	female	67	2	right	right	yes	left pons	2	75	1
+S15	male	63	1	left	left	yes	right fronto-parietal temporo-occipital lobe, right inner watershed	7	55	1
+S16	male	57	1	right	right	no	left basal ganglia	4	90	2
+S17	male	60	3	left	right	yes	"right paraventricular	 right basal ganglia"	3	85	1
+S18	female	60	1	left	right	yes	right basal ganglia	10	45	4
+S19	female	62	1	left	right	no	right paraventricular,right basal ganglia	8	40	4
+S20	male	34	24	right	right	no	left paraventricular,right temporal lobe	2	95	1
+S21	male	41	5	left	right	yes	pons	2	90	1
+S22	male	52	6	left	right	yes	right temporo-parietal occipital lobe and insula, right basal ganglia,right paraventricular	11	45	4
+S23	male	57	2	left	right	yes	right paraventricular,right basal ganglia	4	40	4
+S24	female	55	3	right	right	yes	left paraventricular	1	60	4
+S25	male	47	10	left	right	yes	right paraventricular	5	55	4
+S26	male	61	1	left	right	yes	right thalamus	4	70	4
+S27	female	52	5	right	right	yes	left basal ganglia,left paraventricular	3	70	3
+S28	female	42	2	right	right	yes	left thalamus,left splenium of corpus callosum	1	85	1
+S29	male	53	16	right	right	yes	left thalamus	1	95	0
+S30	male	68	4	left	right	yes	right paraventricular	4	100	1
+S31	female	59	5	right	right	no	"right corona radiata	 right centrum semiovale"	3	80	3
+S32	male	74	2	right	right	yes	pons	3	81	4
+S33	male	63	7	right	right	yes	pons	3	58	4
+S34	female	69	1	left	right	no	right frontal lobe	1	85	2
+S35	male	69	11	left	right	no	right cerebellum,bilateral occipital lobes	1	52	4
+S36	male	69	30	left	right	yes	right paraventricular,right basal ganglia	6	63	3
+S37	male	49	7	left	right	yes	internal capsule	3	88	4
+S38	male	53	2	right	right	yes	right pons	3	64	3
+S39	male	56	2	right	right	yes	left cerebellar hemisphere left medulla oblongata	11	32	5
+S40	female	56	6	left	right	no	pons	6	65	4
+S41	male	77	2	right	right	no	pons	7	60	4
+S42	male	54	2	right	right	no	left pons	7	60	4
+S43	male	32	3	left	right	yes	right frontal lobe	2	65	4
+S44	male	59	1	left	right	yes	left subfrontal cortex，right basal ganglia,right lateral ventricle,right corona radiata	1	80	1
+S45	male	64	30	right	right	yes	pons	6	84	4
+S46	male	66	10	right	right	yes	left parietal lobe	1	85	1
+S47	male	40	4	left	right	yes	medulla oblongata	7	55	4
+S48	male	75	18	left	right	yes	right subcortical cerebral hemisphere,right basal ganglia,left subparietal cortex	2	90	1
+S49	male	52	3	left	right	yes	right basal ganglia	1	85	1
+S50	female	64	1	left	right	yes	pons	3	85	2

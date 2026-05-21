@@ -123,6 +123,7 @@ TASK_ONNX: dict[str, dict[str, dict[str, str]]] = {
         },
         "stroke": {
             "riemannian": "riemannian_lr_right_hand_stroke.onnx",
+            "eegnet": "eegnet_right_hand_stroke.onnx",
         },
     },
 }

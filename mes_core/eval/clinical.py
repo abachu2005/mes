@@ -78,15 +78,29 @@ def _score_trials_stroke(
         except Exception:
             p = np.full(len(tlist), 0.5)
 
-        mes = compute_mes(xs, sfreq, ch, "right_hand", bl, weights, p, rest_epochs_data=(
-            np.stack(rest_stack) if rest_stack else None
-        ))
-        clin = clinical_by_subject.get(subj) or clinical_by_subject.get(subj.lstrip("S")) or {}
+        base = subj.split("_")[0] if "_" in subj else subj
+        clin = (
+            clinical_by_subject.get(subj)
+            or clinical_by_subject.get(base)
+            or clinical_by_subject.get(base.lstrip("S"))
+            or {}
+        )
         side = clin.get("paralysis_side") or clin.get("ParalysisSide")
         if isinstance(side, str):
-            side = side
+            side = side.strip()
         elif side is not None:
-            side = str(side)
+            side = str(side).strip()
+        mes = compute_mes(
+            xs,
+            sfreq,
+            ch,
+            "right_hand",
+            bl,
+            weights,
+            p,
+            rest_epochs_data=(np.stack(rest_stack) if rest_stack else None),
+            paralysis_side=side,
+        )
         rehab = compute_rehab_proxy(
             mes.mes_per_trial,
             labels,
@@ -115,10 +129,15 @@ def load_liu2024_clinical_table(path: Path | None = None) -> dict[str, dict[str,
     out: dict[str, dict[str, float]] = {}
     id_col = "participant_id" if "participant_id" in df.columns else "Participant_ID"
     for _, row in df.iterrows():
-        pid = str(row.get(id_col, "")).strip()
+        pid = str(row.get(id_col, "")).strip().replace("sub-", "")
         if not pid:
             continue
-        key = pid if pid.startswith("S") else f"S{pid}"
+        if pid.isdigit():
+            key = f"S{int(pid)}"
+        elif pid.startswith("S"):
+            key = pid
+        else:
+            key = f"S{pid}"
         rec: dict[str, float] = {}
         for col in df.columns:
             cl = col.lower()

@@ -25,7 +25,11 @@ import numpy as np
 
 from mes_core.config import BANDS
 from mes_core.features.bandpower import erd_percent
-from mes_core.features.lateralization import default_contra_ipsi_for_task, lateralization_index
+from mes_core.features.lateralization import (
+    contra_ipsi_for_stroke,
+    default_contra_ipsi_for_task,
+    lateralization_index,
+)
 from mes_core.features.mrcp import mrcp_features
 
 # ---------------------------------------------------------------------------
@@ -146,6 +150,8 @@ def _per_trial_subfeatures(
     ch_names: list[str],
     task: str,
     baseline_data: np.ndarray | None = None,
+    *,
+    paralysis_side: str | None = None,
 ) -> dict[str, np.ndarray]:
     """Compute the 4 raw sub-features (un-z-scored) per epoch."""
     data = np.asarray(epochs_data, dtype=float)
@@ -166,7 +172,11 @@ def _per_trial_subfeatures(
             )
     task_seg = data[..., -last:]
 
-    contra, ipsi = default_contra_ipsi_for_task(task)
+    contra, ipsi = (
+        contra_ipsi_for_stroke(task, paralysis_side)
+        if paralysis_side
+        else default_contra_ipsi_for_task(task)
+    )
 
     erd_mu = erd_percent(task_seg, baseline, sfreq, BANDS["mu"])
     erd_beta = erd_percent(task_seg, baseline, sfreq, BANDS["beta"])
@@ -236,6 +246,7 @@ def compute_mes(
     p_model: np.ndarray,
     *,
     rest_epochs_data: np.ndarray | None = None,
+    paralysis_side: str | None = None,
 ) -> MesScoreResult:
     """Compute the Motor Engagement Signal for each trial in a session.
 
@@ -260,6 +271,7 @@ def compute_mes(
         ch_names=ch_names,
         task=task,
         baseline_data=rest_epochs_data,
+        paralysis_side=paralysis_side,
     )
     arr = np.stack(
         [raw_sub["z_mu"], raw_sub["z_beta"], raw_sub["z_li"], raw_sub["z_mrcp"]],

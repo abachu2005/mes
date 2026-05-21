@@ -21,9 +21,9 @@ GATES_PATH = ROOT / "mes_core/data/stroke_validation_gates.json"
 BENCHMARK_PATH = ROOT / "mes_core/data/benchmarks.json"
 
 # Targets for Liu2024 right_hand vs break/rest (LOSO on parquet).
-STROKE_MIN_AUC = 0.55
+STROKE_MIN_AUC = 0.65
 STROKE_TARGET_AUC = 0.75
-STROKE_MIN_COHEN_D = 0.25
+STROKE_MIN_COHEN_D = 0.55
 STROKE_TARGET_COHEN_D = 0.80
 
 

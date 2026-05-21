@@ -1,0 +1,18 @@
+{
+  "model": "eegnet_v4",
+  "task": "right_hand_vs_rest",
+  "cohort": "stroke",
+  "input_kind": "raw_epochs",
+  "n_channels": 16,
+  "n_times": 750,
+  "loso_acc_mean": 0.6611316642289713,
+  "fold_accs": [
+    0.6615905245346869,
+    0.6610169491525424,
+    0.6610169491525424,
+    0.6610169491525424,
+    0.6610169491525424
+  ],
+  "n_train": 2951,
+  "data_prefix": "liu2024_"
+}

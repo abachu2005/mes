@@ -1,6 +1,6 @@
 {
-  "min_mes_auc": 0.55,
-  "min_cohen_d": 0.25,
+  "min_mes_auc": 0.65,
+  "min_cohen_d": 0.55,
   "target_mes_auc": 0.75,
   "target_cohen_d": 0.8
 }
