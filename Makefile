@@ -18,6 +18,7 @@ help:
 	@echo "  smoke           Boot backend locally + one round-trip"
 	@echo "  kaggle-validate  Run validation notebook on Kaggle"
 	@echo "  hf-jobs-eegnet   Train EEGNet on HF Jobs GPU (fast queue, ~\$2)"
+	@echo "  preflight        Run pipeline preflight checks locally"
 	@echo "  docker-build    Build the HF Space image"
 	@echo "  docker-run      Run image locally on :7860"
 	@echo "  frontend-build  npm build the React app"
@@ -102,6 +103,14 @@ hf-jobs-eegnet:
 	  -e HF_DATASET_REPO=$$HF_DATASET_REPO \
 	  -e HF_MODEL_REPO=$$HF_MODEL_REPO \
 	  -e HF_USERNAME=$$HF_USERNAME
+
+preflight:
+	@set -a; . ./.env.local; set +a; \
+	  $(PYTHON) scripts/preflight.py --stage all
+
+preflight-smoke:
+	@set -a; . ./.env.local; set +a; \
+	  $(PYTHON) scripts/preflight.py --stage mes-train --smoke
 
 # ---------- HF Space deploy ----------
 

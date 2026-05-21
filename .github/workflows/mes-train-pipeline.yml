@@ -10,12 +10,45 @@ on:
         description: "Number of PhysioNet subjects (1-30)"
         required: false
         default: "30"
+      smoke:
+        description: "Run 1-subject smoke probe during preflight"
+        type: boolean
+        default: false
   workflow_run:
     workflows: [kaggle-chain]
     types: [completed]
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure')
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[train]"
+          pip install skl2onnx 'huggingface_hub[cli]>=0.26'
+      - name: Preflight (fail fast)
+        run: |
+          EXTRA=""
+          if [ "${{ github.event.inputs.smoke }}" = "true" ]; then EXTRA="--smoke"; fi
+          python scripts/preflight.py --stage mes-train $EXTRA
+
   train:
+    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 180
     if: >-
@@ -63,13 +96,14 @@ jobs:
 
       - name: Upload models to HF
         run: |
+          set -euo pipefail
           for pat in "*.onnx" "*.json" "*.npz"; do
             python scripts/hf_sync.py \
               --local-dir /tmp/mes-models \
               --repo-id "$HF_MODEL_REPO" \
               --repo-type model \
               --pattern "$pat" \
-              --message "riemannian train via GitHub Actions" || true
+              --message "riemannian train via GitHub Actions"
           done
 
       - name: Done

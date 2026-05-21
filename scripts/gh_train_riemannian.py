@@ -51,7 +51,8 @@ def train(data_dir: Path, out_dir: Path) -> None:
     x = np.stack([r["X"] for r in train_rows])
     y = np.array([r["y"] for r in train_rows])
     subjects = np.array([r["subject"] for r in train_rows])
-    print("X shape:", x.shape, "y dist:", dict(zip(*np.unique(y, return_counts=True), strict=False))
+    uniq, counts = np.unique(y, return_counts=True)
+    print("X shape:", x.shape, "y dist:", dict(zip(uniq, counts, strict=False)))
 
     def build_pipe():
         return Pipeline(

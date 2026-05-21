@@ -1,0 +1,56 @@
+name: preflight
+
+# Fast checks before any long training job. Run manually or on push to main.
+# Catches: missing secrets, DNS blocks, missing deps, empty HF repos, no HF Pro.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Check stage"
+        type: choice
+        options: [all, mes-train, hf-jobs-eegnet]
+        default: all
+      smoke:
+        description: "Run 1-subject preprocess probe (~5 min)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "mes_core/**"
+      - ".github/workflows/mes-train-pipeline.yml"
+      - ".github/workflows/hf-jobs-train-eegnet.yml"
+      - ".github/workflows/preflight.yml"
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps for checks
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[train]"
+          pip install skl2onnx 'huggingface_hub[cli]>=0.26'
+
+      - name: Run preflight
+        run: |
+          STAGE="${{ github.event.inputs.stage || 'all' }}"
+          SMOKE="${{ github.event.inputs.smoke || 'false' }}"
+          EXTRA=""
+          if [ "$SMOKE" = "true" ]; then EXTRA="--smoke"; fi
+          python scripts/preflight.py --stage "$STAGE" $EXTRA

@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from mne.datasets import eegbci
 
-from mes_core.config import EPOCH_TMAX, EPOCH_TMIN, TARGET_SFREQ
+from mes_core.config import EPOCH_TMAX, EPOCH_TMIN
 from mes_core.preprocessing import PreprocessConfig, epoch_raw, preprocess_raw
 
 MI_HAND_RUNS = [4, 8, 12]

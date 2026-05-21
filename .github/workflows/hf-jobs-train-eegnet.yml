@@ -19,7 +19,29 @@ on:
     types: [completed]
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success')
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Hugging Face CLI
+        run: pip install --upgrade 'huggingface_hub[cli]>=0.26'
+      - name: Preflight (fail fast)
+        run: python scripts/preflight.py --stage hf-jobs-eegnet
+
   train:
+    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 210
     # Only auto-run after kaggle-chain when that workflow succeeded.
@@ -40,25 +62,6 @@ jobs:
 
       - name: Install Hugging Face CLI
         run: pip install --upgrade 'huggingface_hub[cli]>=0.26'
-
-      - name: Preflight — processed dataset on Hub
-        run: |
-          python <<'PY'
-          import os, sys
-          from huggingface_hub import HfApi
-          repo = os.environ["HF_DATASET_REPO"]
-          api = HfApi(token=os.environ["HF_TOKEN"])
-          try:
-              files = api.list_repo_files(repo, repo_type="dataset")
-          except Exception as e:
-              print(f"Dataset repo missing or inaccessible: {e}", file=sys.stderr)
-              sys.exit(1)
-          parquet = [f for f in files if f.endswith(".parquet")]
-          if not parquet:
-              print(f"No parquet in {repo} — run kaggle-chain preprocess first", file=sys.stderr)
-              sys.exit(1)
-          print(f"OK: {len(parquet)} parquet file(s) in {repo}")
-          PY
 
       - name: Submit EEGNet training job (HF Jobs)
         run: |
