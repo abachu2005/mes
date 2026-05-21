@@ -68,6 +68,12 @@ e2e: docker-build
 smoke:
 	$(PYTHON) -m backend.app.main --smoke
 
+protocol-e2e:
+	$(PYTHON) scripts/run_protocol_e2e.py --json-out /tmp/protocol_e2e_report.json
+
+protocol-e2e-live:
+	$(PYTHON) scripts/run_protocol_e2e.py --live https://abachu2005-mes.hf.space --json-out /tmp/protocol_hf_report.json
+
 smoke-prod:
 	curl -fsS https://huggingface.co/spaces/abachu2005/mes/healthz || echo "Space sleeping or down"
 

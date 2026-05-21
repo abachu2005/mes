@@ -34,12 +34,19 @@ def score(
     task: str = typer.Option("right_hand", help="Target task"),
     out: Path = typer.Option(Path("mes_result.json"), help="Where to write JSON result"),
     no_onnx: bool = typer.Option(False, help="Skip ONNX ensemble (heuristic posterior)"),
+    rest_block: bool = typer.Option(
+        False,
+        "--rest-block/--no-rest-block",
+        help="Protocol: first 60 s of sliding windows are rest baseline",
+    ),
 ) -> None:
     """Score a single recording with production ONNX + fitted MES weights."""
     from mes_core.pipeline import score_recording
 
     console.print(f"[bold]Loading[/]: {edf_path}")
-    result = score_recording(edf_path, task=task, use_onnx=not no_onnx)
+    result = score_recording(
+        edf_path, task=task, use_onnx=not no_onnx, had_rest_block=rest_block
+    )
     payload = result.to_dict()
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     mean = result.mes.summary["mes_mean"]

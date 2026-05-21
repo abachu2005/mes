@@ -18,7 +18,12 @@ from mes_core.features.bandpower import erd_percent
 from mes_core.features.lateralization import default_contra_ipsi_for_task, lateralization_index
 from mes_core.io import load_eeg
 from mes_core.pipeline import score_epochs
-from mes_core.preprocessing import PreprocessConfig, epoch_raw, epoch_sliding_windows, preprocess_raw
+from mes_core.preprocessing import (
+    PreprocessConfig,
+    epoch_raw,
+    epoch_sliding_windows,
+    preprocess_raw,
+)
 from mes_core.scoring.recovery import mes_recovery_z
 from mes_core.viz.report import ReportContext, build_session_report_html, render_pdf
 from mes_core.viz.topomap import scalp_topomap_payload

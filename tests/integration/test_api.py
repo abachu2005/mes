@@ -113,3 +113,39 @@ def test_session_upload_and_pipeline_round_trip(client: TestClient, tmp_path) ->
     assert "eegnet" in model_sha.lower() or "ensemble" in model_sha.lower(), (
         f"Expected EEGNet or ensemble in model_sha, got {model_sha!r}"
     )
+
+
+def test_protocol_openbci_upload_with_rest_block(client: TestClient, tmp_path) -> None:
+    from scripts.generate_protocol_test_file import build_protocol_recording, write_openbci_txt
+
+    p = client.post("/api/participants", json={"code": "PROTO-1"}).json()
+    out = tmp_path / "protocol.txt"
+    write_openbci_txt(out, build_protocol_recording(n_trials=6))
+
+    with out.open("rb") as f:
+        r = client.post(
+            "/api/sessions",
+            files={"file": ("protocol.txt", f, "text/plain")},
+            data={
+                "participant_id": p["id"],
+                "task": "right_hand",
+                "had_rest_block": "true",
+                "cohort": "healthy",
+            },
+        )
+    assert r.status_code == 201, r.text
+    sid = r.json()["id"]
+
+    for _ in range(120):
+        st = client.get(f"/api/sessions/{sid}").json()
+        if st["status"] in ("done", "failed"):
+            break
+        time.sleep(0.25)
+
+    final = client.get(f"/api/sessions/{sid}").json()
+    assert final["status"] == "done", final
+    score = client.get(f"/api/sessions/{sid}/score").json()
+    meta = score.get("score_meta") or {}
+    assert meta.get("n_rest_epochs", 0) >= 10, meta
+    assert meta.get("baseline_kind") == "subject_rest", meta
+    assert score.get("reliability") in ("High", "Medium", "Low")

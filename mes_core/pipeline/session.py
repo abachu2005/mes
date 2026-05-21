@@ -11,7 +11,12 @@ import structlog
 
 from mes_core.artifacts import load_mes_weights, load_population_baseline
 from mes_core.models.inference import resolve_session_posterior
-from mes_core.preprocessing import PreprocessConfig, epoch_raw, epoch_sliding_windows, preprocess_raw
+from mes_core.preprocessing import (
+    PreprocessConfig,
+    epoch_raw,
+    epoch_sliding_windows,
+    preprocess_raw,
+)
 from mes_core.quality import assess_session, reliability_tier
 from mes_core.scoring import MesScoreResult, compute_mes, fit_subject_baseline
 from mes_core.scoring.rest import rest_mask_protocol, split_rest_and_task_epochs
