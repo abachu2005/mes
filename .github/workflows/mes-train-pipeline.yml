@@ -31,7 +31,8 @@ jobs:
     timeout-minutes: 15
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'failure')
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }}
@@ -60,7 +61,8 @@ jobs:
     timeout-minutes: 180
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'failure')
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }}
