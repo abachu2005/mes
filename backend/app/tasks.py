@@ -90,6 +90,10 @@ def run_session_pipeline(
         _update(session_id, progress=65)
 
         ch_names = raw_pp.info["ch_names"]
+        used_sliding = data is not None and (
+            epochs is None or len(epochs) == 0
+        ) and len(data) > 1
+
         try:
             scored = score_epochs(
                 data,
@@ -99,6 +103,8 @@ def run_session_pipeline(
                 use_onnx=True,
                 cohort=cohort if cohort in ("healthy", "stroke") else "healthy",
                 require_quality=True,
+                had_rest_block=had_rest_block,
+                used_sliding_windows=used_sliding,
             )
         except ValueError as qe:
             log.warning("quality_gate_retry", err=str(qe))
@@ -110,11 +116,10 @@ def run_session_pipeline(
                 use_onnx=True,
                 cohort=cohort if cohort in ("healthy", "stroke") else "healthy",
                 require_quality=False,
+                had_rest_block=had_rest_block,
+                used_sliding_windows=used_sliding,
             )
             scored.reliability = "Low"
-
-        if not had_rest_block and scored.baseline_kind == "subject_rest":
-            scored.reliability = "Medium" if scored.reliability == "High" else scored.reliability
 
         result = scored.mes
         model_sha = scored.model_sha

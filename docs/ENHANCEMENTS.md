@@ -7,6 +7,7 @@
 - **Cohort weights** — `healthy` vs `stroke` bundles in `mes_core/data/`
 - **Recovery index** — `mes_recovery_z` vs participant's prior sessions
 - **Protocol UI** — checklist + rest-block confirmation on upload
+- **Rest-block scoring** — when `had_rest_block` is set and the file uses sliding windows (continuous OpenBCI/EDF), the first **60 s** of windows are scored as rest baseline (`rest_mask_protocol` in `mes_core/scoring/rest.py`). Generate a test file: `python3 scripts/generate_protocol_test_file.py -o data/protocol_test_openbci.txt`
 
 ## Validation & training
 

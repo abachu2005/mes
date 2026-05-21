@@ -37,3 +37,24 @@ def split_rest_and_task_epochs(
         return rest_idx, task_idx, "implicit_rest_block"
 
     return np.array([], dtype=int), np.arange(n), "per_trial"
+
+
+def rest_mask_protocol(
+    n_epochs: int,
+    *,
+    sfreq: float,
+    rest_seconds: float = 60.0,
+    window_s: float = 6.0,
+    step_s: float = 3.0,
+) -> np.ndarray:
+    """Boolean mask: True for sliding-window epochs in the protocol rest block.
+
+    Matches ``epoch_sliding_windows``: epoch *i* starts at ``i * step_s`` seconds.
+    Windows that start before ``rest_seconds`` are treated as rest (baseline).
+    """
+    del sfreq  # reserved for sample-accurate alignment later
+    n = int(n_epochs)
+    if n <= 0:
+        return np.zeros(0, dtype=bool)
+    starts = np.arange(n, dtype=float) * float(step_s)
+    return starts < float(rest_seconds)

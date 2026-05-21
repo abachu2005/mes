@@ -14,7 +14,12 @@ from mes_core.models.inference import resolve_session_posterior
 from mes_core.preprocessing import PreprocessConfig, epoch_raw, epoch_sliding_windows, preprocess_raw
 from mes_core.quality import assess_session, reliability_tier
 from mes_core.scoring import MesScoreResult, compute_mes, fit_subject_baseline
-from mes_core.scoring.rest import split_rest_and_task_epochs
+from mes_core.scoring.rest import rest_mask_protocol, split_rest_and_task_epochs
+
+# Sliding-window params (must match epoch_sliding_windows defaults).
+_SLIDE_WINDOW_S = 6.0
+_SLIDE_STEP_S = 3.0
+_PROTOCOL_REST_S = 60.0
 
 log = structlog.get_logger(__name__)
 
@@ -56,16 +61,30 @@ def score_epochs(
     use_onnx: bool = True,
     cohort: str = "healthy",
     require_quality: bool = True,
+    had_rest_block: bool = False,
+    used_sliding_windows: bool = False,
 ) -> SessionScoreResult:
     """Score preprocessed epoch tensor (n_epochs, n_ch, n_times)."""
     data = np.asarray(epochs_data, dtype=float)
+    n = data.shape[0]
     sq, usable_mask = assess_session(data, ch_names, sfreq=sfreq)
     if require_quality and not sq.ok:
         raise ValueError(
             "Session quality too low for scoring: " + ", ".join(sq.reasons or ["unknown"])
         )
 
-    if rest_mask is None:
+    if rest_mask is None and had_rest_block and used_sliding_windows and n > 0:
+        rest_mask = rest_mask_protocol(
+            n,
+            sfreq=sfreq,
+            rest_seconds=_PROTOCOL_REST_S,
+            window_s=_SLIDE_WINDOW_S,
+            step_s=_SLIDE_STEP_S,
+        )
+        rest_idx = np.where(rest_mask)[0]
+        task_idx = np.where(~rest_mask)[0]
+        kind = "protocol_rest_block"
+    elif rest_mask is None:
         rest_idx, task_idx, kind = split_rest_and_task_epochs(data, sfreq=sfreq)
     else:
         rest_mask = np.asarray(rest_mask, dtype=bool)
@@ -149,6 +168,7 @@ def score_recording(
     use_onnx: bool = True,
     cohort: str = "healthy",
     require_quality: bool = True,
+    had_rest_block: bool = False,
 ) -> SessionScoreResult:
     """Load, preprocess, epoch, and score one EEG file."""
     from mes_core.io import load_eeg
@@ -159,8 +179,12 @@ def score_recording(
     raw_pp = preprocess_raw(raw, cfg)
     epochs = epoch_raw(raw_pp)
     data = epochs.get_data() if epochs is not None and len(epochs) > 0 else None
+    used_sliding = False
     if data is None or len(data) == 0:
-        data = epoch_sliding_windows(raw_pp, window_s=6.0, step_s=3.0)
+        data = epoch_sliding_windows(
+            raw_pp, window_s=_SLIDE_WINDOW_S, step_s=_SLIDE_STEP_S
+        )
+        used_sliding = data is not None and len(data) > 0
     if data is None or len(data) == 0:
         arr = raw_pp.get_data()
         n_ch, n_t = arr.shape
@@ -178,6 +202,8 @@ def score_recording(
         use_onnx=use_onnx,
         cohort=cohort,
         require_quality=require_quality,
+        had_rest_block=had_rest_block,
+        used_sliding_windows=used_sliding,
     )
 
 
