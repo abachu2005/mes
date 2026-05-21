@@ -106,3 +106,10 @@ def test_session_upload_and_pipeline_round_trip(client: TestClient, tmp_path) ->
     assert 0 <= score["mes_mean"] <= 100
     assert score["n_trials"] >= 1
     assert "erd_topomap" in score
+    model_sha = score.get("model_sha") or ""
+    assert model_sha not in ("", "heuristic"), (
+        f"Expected ONNX inference, got model_sha={model_sha!r}"
+    )
+    assert "eegnet" in model_sha.lower() or "ensemble" in model_sha.lower(), (
+        f"Expected EEGNet or ensemble in model_sha, got {model_sha!r}"
+    )

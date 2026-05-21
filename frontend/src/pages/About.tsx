@@ -53,17 +53,66 @@ MES = 100 · sigmoid(raw)`}
         {!models.data ? <div className="text-ink-500 text-sm">Loading…</div> : (
           <div className="space-y-2 text-sm">
             <div>Repo: <code>{(models.data as any).model_repo}</code></div>
+            <p className="text-ink-600 dark:text-ink-300">
+              Production scoring uses an <strong>ensemble</strong> of Riemannian tangent-space logistic
+              regression and EEGNet when both ONNX files are on the Hub.
+            </p>
             <div>Files:</div>
             <ul className="list-disc list-inside text-ink-600 dark:text-ink-300">
               {((models.data as any).available ?? []).map((f: string) => (
                 <li key={f}><code>{f}</code></li>
               ))}
               {((models.data as any).available ?? []).length === 0 && (
-                <li className="italic text-ink-500">No models published yet — training in progress on Kaggle.</li>
+                <li className="italic text-ink-500">No models published yet — training in progress.</li>
               )}
             </ul>
           </div>
         )}
+      </Section>
+
+      <Section title="Training benchmarks (LOSO)">
+        {!models.data ? <div className="text-ink-500 text-sm">Loading…</div> : (() => {
+          const bench = (models.data as any).benchmarks as {
+            models?: Array<{
+              model_file: string;
+              task: string;
+              n_train?: number;
+              loso_accuracy?: number;
+              trained_on?: string;
+            }>;
+          } | null;
+          const rows = bench?.models ?? [];
+          if (!rows.length) {
+            return (
+              <p className="text-sm text-ink-500">
+                Benchmarks JSON not on the Hub yet. After training, CI runs{" "}
+                <code>scripts/publish_benchmarks.py</code>.
+              </p>
+            );
+          }
+          return (
+            <table className="w-full text-sm mt-1">
+              <thead className="text-xs uppercase text-ink-500">
+                <tr>
+                  <th className="text-left p-2">Model</th>
+                  <th className="text-right p-2">n_train</th>
+                  <th className="text-right p-2">LOSO acc</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.model_file} className="border-t border-ink-100 dark:border-ink-800">
+                    <td className="p-2 font-mono text-xs">{r.model_file}</td>
+                    <td className="p-2 text-right">{r.n_train ?? "—"}</td>
+                    <td className="p-2 text-right tabular-nums">
+                      {r.loso_accuracy != null ? r.loso_accuracy.toFixed(3) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        })()}
       </Section>
 
       <Section title="Limitations">

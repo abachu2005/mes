@@ -6,6 +6,7 @@ import { Download, ArrowLeft, Activity, BarChart3, Compass, Info } from "lucide-
 import Joyride, { type Step } from "react-joyride";
 import { api } from "../lib/api";
 import { fmtDate, mesBand } from "../lib/format";
+import { formatModelSha } from "../lib/modelInfo";
 import { MesGauge } from "../components/MesGauge";
 import { MesTrace } from "../components/MesTrace";
 import { Topomap } from "../components/Topomap";
@@ -81,6 +82,7 @@ export function SessionReport() {
 
   const sc = score.data;
   const band = mesBand(sc.mes_mean);
+  const model = formatModelSha(sc.model_sha);
 
   const tourSteps: Step[] = [
     { target: "[data-tour=gauge]", content: "This gauge shows the participant's mean MES across all trials. Higher = stronger motor-cortical engagement.", disableBeacon: true },
@@ -109,6 +111,20 @@ export function SessionReport() {
           <h1 className="text-3xl font-semibold">Session report</h1>
           <p className="text-ink-500 text-sm mt-1">
             {s.task} · {s.target_limb} · {s.headset} · {fmtDate(s.created_at)}
+          </p>
+          <p className="text-xs text-ink-500 mt-2" title={model.detail}>
+            Classifier:{" "}
+            <span
+              className={
+                model.isHeuristic
+                  ? "text-amber-700 dark:text-amber-400 font-medium"
+                  : model.isEnsemble
+                    ? "text-teal-700 dark:text-teal-400 font-medium"
+                    : "text-ink-600 dark:text-ink-300 font-medium"
+              }
+            >
+              {model.label}
+            </span>
           </p>
         </div>
         <div className="flex gap-2">

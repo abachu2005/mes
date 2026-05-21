@@ -18,6 +18,7 @@ on:
     branches: [main]
     paths:
       - "scripts/hf_jobs_train_eegnet.py"
+      - "scripts/publish_benchmarks.py"
       - ".github/workflows/hf-jobs-train-eegnet.yml"
   workflow_run:
     workflows: [mes-train-pipeline]
@@ -98,6 +99,11 @@ jobs:
               raise SystemExit(f"Missing on Hub: {sorted(missing)}")
           print("OK:", sorted(need))
           PY
+
+      - name: Publish training benchmarks to Hub
+        run: |
+          pip install -q 'huggingface_hub[cli]>=0.26'
+          python scripts/publish_benchmarks.py
 
       - name: Done
         run: |

@@ -1,0 +1,28 @@
+name: publish-benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/publish_benchmarks.py"
+      - ".github/workflows/publish-benchmarks.yml"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }}
+      HF_MODEL_REPO: ${{ secrets.HF_USERNAME }}/mes-models
+      HF_DATASET_REPO: ${{ secrets.HF_USERNAME }}/mes-eeg-processed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -q 'huggingface_hub[cli]>=0.26'
+      - name: Publish benchmarks.md/json
+        run: python scripts/publish_benchmarks.py

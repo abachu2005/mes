@@ -7,10 +7,17 @@ When training has completed on Kaggle, the latest results are published to
 on the HF model repo. The frontend's About page also pulls the latest
 benchmarks JSON live.
 
-## Live results
+## Live results (training LOSO)
 
-Until the first training run completes, this page is intentionally a stub.
-Once `03_validate.py` finishes:
+Published automatically to the [model repo](https://huggingface.co/abachu2005/mes-models)
+via `scripts/publish_benchmarks.py` after EEGNet training completes:
+
+| Model | Task | n_train | LOSO accuracy | Trained on |
+|---|---|---:|---:|---|
+| `riemannian_lr_right_hand.onnx` | right_hand_vs_rest | 967 | 0.444 | github_actions |
+| `eegnet_right_hand.onnx` | right_hand_vs_rest | 967 | 0.693 | hf_jobs |
+
+Held-out per-dataset metrics (PhysioNet / BCI / Liu) from `03_validate.py`:
 
 | Dataset | Model | n | Accuracy | AUC | Brier |
 |---|---|---:|---:|---:|---:|
