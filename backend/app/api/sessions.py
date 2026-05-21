@@ -36,6 +36,8 @@ async def upload_session(
     target_limb: str = Form("Right hand"),
     headset: str = Form("OpenBCI Cyton+Daisy"),
     montage: str = Form("openbci_16"),
+    cohort: str = Form("healthy"),
+    had_rest_block: str = Form("true"),
     db: Session = Depends(get_session),
 ) -> DbSession:
     p = db.get(Participant, participant_id)
@@ -63,7 +65,14 @@ async def upload_session(
     sess.file_uri = store_upload(tmp_path, sess.id, original_filename=file.filename)
     db.commit()
     db.refresh(sess)
-    background.add_task(run_session_pipeline, sess.id, tmp_path, task)
+    background.add_task(
+        run_session_pipeline,
+        sess.id,
+        tmp_path,
+        task,
+        cohort=cohort if cohort in ("healthy", "stroke") else "healthy",
+        had_rest_block=had_rest_block.lower() in ("true", "1", "yes"),
+    )
     return sess
 
 

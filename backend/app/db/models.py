@@ -77,6 +77,9 @@ class MesScore(Base):
     raw_features: Mapped[dict] = mapped_column(JSON)
     model_sha: Mapped[str | None] = mapped_column(String(64), default=None)
     report_uri: Mapped[str | None] = mapped_column(String(512), default=None)
+    reliability: Mapped[str | None] = mapped_column(String(16), default="Medium")
+    mes_recovery_z: Mapped[float | None] = mapped_column(Float, default=None)
+    score_meta: Mapped[dict | None] = mapped_column(JSON, default=None)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
     session: Mapped[Session] = relationship("Session", back_populates="score")

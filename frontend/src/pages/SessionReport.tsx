@@ -125,7 +125,25 @@ export function SessionReport() {
             >
               {model.label}
             </span>
+            {sc.reliability && (
+              <>
+                {" · "}
+                <ReliabilityBadge tier={sc.reliability} />
+              </>
+            )}
           </p>
+          {sc.mes_recovery_z != null && (
+            <p className="text-xs text-ink-500 mt-1">
+              Recovery index (vs prior sessions):{" "}
+              <span className="font-medium text-ink-700 dark:text-ink-200">
+                {sc.mes_recovery_z >= 0 ? "+" : ""}
+                {sc.mes_recovery_z.toFixed(2)} σ
+              </span>
+              {sc.score_meta?.recovery_label != null && (
+                <span className="text-ink-400"> ({String(sc.score_meta.recovery_label)})</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button className="btn-ghost" onClick={() => setRunTour(true)} aria-label="Guided tour">
@@ -233,6 +251,16 @@ function LateralBar({ v }: { v: number }) {
     </div>
   );
 }
+function ReliabilityBadge({ tier }: { tier: string }) {
+  const cls =
+    tier === "High"
+      ? "text-teal-700 dark:text-teal-400"
+      : tier === "Medium"
+        ? "text-amber-700 dark:text-amber-400"
+        : "text-rose-700 dark:text-rose-400";
+  return <span className={`font-medium ${cls}`}>{tier} reliability</span>;
+}
+
 function Loading() {
   return <div className="max-w-7xl mx-auto px-6 py-8 text-ink-500">Loading…</div>;
 }

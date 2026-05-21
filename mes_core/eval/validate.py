@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 
 from mes_core.artifacts import load_mes_weights
 from mes_core.config import OPENBCI_MONTAGE_16, TARGET_SFREQ
-from mes_core.eval.metrics import brier_score, cohen_d
+from mes_core.eval.metrics import brier_score
 from mes_core.eval.parquet import ParquetTrial, load_parquet_dir
 from mes_core.models.inference import resolve_session_posterior
 from mes_core.scoring import SubjectBaseline, compute_mes, fit_mes_weights, fit_subject_baseline
@@ -157,7 +157,13 @@ def run_validation(
 
     task_mes = mes_scores[labels == 1]
     rest_mes = mes_scores[labels == 0]
-    d = cohen_d(task_mes, rest_mes) if len(task_mes) and len(rest_mes) else 0.0
+    if len(task_mes) and len(rest_mes):
+        pooled = np.sqrt(
+            (task_mes.var(ddof=1) + rest_mes.var(ddof=1)) / 2.0
+        )
+        d = float((task_mes.mean() - rest_mes.mean()) / pooled) if pooled > 0 else 0.0
+    else:
+        d = 0.0
     notes.append("Labels from dataset parquet (right_hand=1, rest=0).")
     notes.append("ensemble_posterior uses production ONNX mean posterior.")
 

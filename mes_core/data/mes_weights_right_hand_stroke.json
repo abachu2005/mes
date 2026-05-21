@@ -1,0 +1,44 @@
+{
+  "task": "right_hand_vs_rest",
+  "weights": {
+    "w_mu": -0.008333256397543318,
+    "w_beta": 0.005934699498837848,
+    "w_li": 0.37642342333128254,
+    "w_mrcp": 0.058942041736119256,
+    "w_pmodel": 1.4516908050746298,
+    "intercept": -4.040816621625778,
+    "feature_names": [
+      "z_mu",
+      "z_beta",
+      "z_li",
+      "z_mrcp",
+      "logit_pmodel"
+    ]
+  },
+  "meta": {
+    "n_fit_trials": 409,
+    "n_rest_trials": 120,
+    "cohort": "stroke",
+    "note": "Refit with scripts/fit_mes_weights.py --cohort stroke when Liu parquet available"
+  },
+  "population_baseline": {
+    "feature_names": [
+      "z_mu",
+      "z_beta",
+      "z_li",
+      "z_mrcp"
+    ],
+    "mean": [
+      -45.92682535609014,
+      -10.039004995127096,
+      0.027766492998837714,
+      2.097621698352216e-06
+    ],
+    "std": [
+      110.89831813688733,
+      41.80228910667637,
+      0.6719069013194975,
+      1.8038150573946685e-05
+    ]
+  }
+}

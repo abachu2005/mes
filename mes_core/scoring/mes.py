@@ -136,6 +136,7 @@ def _logit(p: np.ndarray, eps: float = 1e-6) -> np.ndarray:
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
+    x = np.clip(np.asarray(x, dtype=float), -20.0, 20.0)
     return 1.0 / (1.0 + np.exp(-x))
 
 

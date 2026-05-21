@@ -16,14 +16,18 @@ log = structlog.get_logger(__name__)
 
 WEIGHTS_FILES: dict[str, str] = {
     "right_hand": "mes_weights_right_hand.json",
+    "right_hand_stroke": "mes_weights_right_hand_stroke.json",
 }
 
 
 @lru_cache(maxsize=8)
-def load_mes_weights(task: str = "right_hand") -> MesWeights:
-    """Return fitted MES weights for *task*, falling back to defaults."""
+def load_mes_weights(task: str = "right_hand", *, cohort: str = "healthy") -> MesWeights:
+    """Return fitted MES weights for *task* and *cohort* (healthy|stroke)."""
     key = "right_hand" if "right" in task else task
-    filename = WEIGHTS_FILES.get(key, WEIGHTS_FILES["right_hand"])
+    if cohort == "stroke" and f"{key}_stroke" in WEIGHTS_FILES:
+        filename = WEIGHTS_FILES[f"{key}_stroke"]
+    else:
+        filename = WEIGHTS_FILES.get(key, WEIGHTS_FILES["right_hand"])
     try:
         raw = resources.files("mes_core.data").joinpath(filename).read_text(encoding="utf-8")
         data = json.loads(raw)

@@ -32,6 +32,9 @@ _SessionFactory = sessionmaker(bind=_engine, autoflush=False, autocommit=False, 
 
 def init_db() -> None:
     Base.metadata.create_all(_engine)
+    from backend.app.db.migrate import migrate_sqlite
+
+    migrate_sqlite()
 
 
 def get_session() -> Generator[ORMSession, None, None]:

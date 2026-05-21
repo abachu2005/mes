@@ -90,7 +90,11 @@ def train_eegnet() -> tuple[Path, Path]:
 
     ds_dir = download_parquet_dir()
     files = sorted(ds_dir.glob("*.parquet"))
-    train_rows = load_subset(files, "physionet_") or load_subset(files, "bci_iv_2a_")
+    train_rows = (
+        load_subset(files, "physionet_")
+        or load_subset(files, "bci_iv_2a_")
+        or load_subset(files, "liu2024_")
+    )
     if not train_rows:
         raise RuntimeError("No training rows found in processed parquet")
 
@@ -112,6 +116,7 @@ def train_eegnet() -> tuple[Path, Path]:
         model = make_model()
         opt = torch.optim.Adam(model.parameters(), lr=lr)
         loss_fn = nn.CrossEntropyLoss()
+        best_acc, patience, bad = 0.0, 12, 0
         for _ in range(n_epochs):
             model.train()
             for xb, yb in dl:
@@ -119,6 +124,16 @@ def train_eegnet() -> tuple[Path, Path]:
                 opt.zero_grad()
                 loss_fn(model(xb), yb).backward()
                 opt.step()
+            model.eval()
+            with torch.no_grad():
+                pred = model(xv.to(device)).argmax(1).cpu().numpy()
+            acc = float((pred == yte).mean())
+            if acc > best_acc:
+                best_acc, bad = acc, 0
+            else:
+                bad += 1
+                if bad >= patience:
+                    break
         model.eval()
         with torch.no_grad():
             pred = model(xv.to(device)).argmax(1).cpu().numpy()

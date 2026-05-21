@@ -52,6 +52,9 @@ export type ScoreDTO = {
   erd_topomap: TopomapPayload;
   raw_features: Record<string, number[]>;
   model_sha: string | null;
+  reliability?: string | null;
+  mes_recovery_z?: number | null;
+  score_meta?: Record<string, unknown> | null;
   created_at: string;
 };
 

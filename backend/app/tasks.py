@@ -1,7 +1,4 @@
-"""Background processing pipeline: ingest -> preprocess -> features -> MES -> persist.
-
-Executed via FastAPI's BackgroundTasks. Idempotent on session_id.
-"""
+"""Background processing pipeline: ingest -> preprocess -> features -> MES -> persist."""
 
 from __future__ import annotations
 
@@ -22,6 +19,7 @@ from mes_core.features.lateralization import default_contra_ipsi_for_task, later
 from mes_core.io import load_eeg
 from mes_core.pipeline import score_epochs
 from mes_core.preprocessing import PreprocessConfig, epoch_raw, preprocess_raw
+from mes_core.scoring.recovery import mes_recovery_z
 from mes_core.viz.report import ReportContext, build_session_report_html, render_pdf
 from mes_core.viz.topomap import scalp_topomap_payload
 
@@ -41,23 +39,45 @@ def _update(session_id: str, **fields: object) -> None:
         db.close()
 
 
-def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
+def _prior_mes_means(participant_id: str, exclude_session_id: str) -> list[float]:
+    with session_scope() as db:
+        rows = (
+            db.query(MesScore.mes_mean)
+            .join(DbSession, MesScore.session_id == DbSession.id)
+            .filter(
+                DbSession.participant_id == participant_id,
+                DbSession.status == "done",
+                DbSession.id != exclude_session_id,
+            )
+            .all()
+        )
+    return [float(r[0]) for r in rows]
+
+
+def run_session_pipeline(
+    session_id: str,
+    upload_path: str,
+    task: str,
+    *,
+    cohort: str = "healthy",
+    had_rest_block: bool = True,
+) -> None:
     """Full pipeline entrypoint executed as a BackgroundTask."""
-    log.info("session_pipeline_start", session_id=session_id, path=upload_path)
+    log.info("session_pipeline_start", session_id=session_id, path=upload_path, cohort=cohort)
     try:
         _update(session_id, status="processing", progress=5)
 
         raw = load_eeg(upload_path)
         _update(session_id, progress=20)
 
-        cfg = PreprocessConfig(do_ica=True)
+        n_ch = len(raw.info["ch_names"])
+        cfg = PreprocessConfig(do_ica=n_ch >= 32)
         raw_pp = preprocess_raw(raw, cfg)
         _update(session_id, progress=45)
 
         epochs = epoch_raw(raw_pp)
         data = epochs.get_data() if epochs is not None and len(epochs) > 0 else None
         if data is None or len(data) == 0:
-            # Fall back to whole-recording windowed epochs so we always score something.
             arr = raw_pp.get_data()
             n_ch, n_t = arr.shape
             n_win = int(6.0 * raw_pp.info["sfreq"])
@@ -68,22 +88,42 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
         _update(session_id, progress=65)
 
         ch_names = raw_pp.info["ch_names"]
-        scored = score_epochs(
-            data,
-            sfreq=float(raw_pp.info["sfreq"]),
-            ch_names=ch_names,
-            task=task,
-            use_onnx=True,
-        )
+        try:
+            scored = score_epochs(
+                data,
+                sfreq=float(raw_pp.info["sfreq"]),
+                ch_names=ch_names,
+                task=task,
+                use_onnx=True,
+                cohort=cohort if cohort in ("healthy", "stroke") else "healthy",
+                require_quality=True,
+            )
+        except ValueError as qe:
+            log.warning("quality_gate_retry", err=str(qe))
+            scored = score_epochs(
+                data,
+                sfreq=float(raw_pp.info["sfreq"]),
+                ch_names=ch_names,
+                task=task,
+                use_onnx=True,
+                cohort=cohort if cohort in ("healthy", "stroke") else "healthy",
+                require_quality=False,
+            )
+            scored.reliability = "Low"
+
+        if not had_rest_block and scored.baseline_kind == "subject_rest":
+            scored.reliability = "Medium" if scored.reliability == "High" else scored.reliability
+
         result = scored.mes
         model_sha = scored.model_sha
         _update(session_id, progress=80)
 
-        # ERD topomap from feature contra
         from mes_core.config import BANDS
 
         half = data.shape[-1] // 2
-        erd = erd_percent(data[..., half:], data[..., :half], raw_pp.info["sfreq"], BANDS["mu"]).mean(axis=0)
+        erd = erd_percent(
+            data[..., half:], data[..., :half], raw_pp.info["sfreq"], BANDS["mu"]
+        ).mean(axis=0)
         topo = scalp_topomap_payload(erd, ch_names)
 
         contra_chs, ipsi_chs = default_contra_ipsi_for_task(task)
@@ -95,6 +135,25 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
         if not np.isfinite(li_val):
             li_val = 0.0
 
+        with session_scope() as db:
+            sess = db.get(DbSession, session_id)
+            pid = sess.participant_id if sess else ""
+        recovery_z, recovery_label = mes_recovery_z(
+            float(result.summary["mes_mean"]),
+            _prior_mes_means(pid, session_id),
+        )
+
+        score_meta = {
+            "quality": scored.quality,
+            "baseline_kind": scored.baseline_kind,
+            "cohort": scored.cohort,
+            "had_rest_block": had_rest_block,
+            "recovery_label": recovery_label,
+            "posterior_entropy": scored.posterior_entropy,
+            "n_rest_epochs": scored.n_rest_epochs,
+            "n_task_epochs": scored.n_task_epochs,
+        }
+
         report_uri = _render_and_store_report(
             session_id=session_id,
             task=task,
@@ -102,6 +161,7 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
             erd_topomap=topo,
             lateralization=float(li_val),
             model_sha=model_sha or "unknown",
+            reliability=scored.reliability,
         )
 
         with session_scope() as db:
@@ -114,9 +174,14 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
                 lateralization=float(li_val),
                 mes_per_trial=[float(v) for v in result.mes_per_trial.tolist()],
                 erd_topomap=topo,
-                raw_features={k: list(map(float, v.tolist())) for k, v in result.raw_features.items()},
+                raw_features={
+                    k: list(map(float, v.tolist())) for k, v in result.raw_features.items()
+                },
                 model_sha=model_sha,
                 report_uri=report_uri,
+                reliability=scored.reliability,
+                mes_recovery_z=recovery_z,
+                score_meta=score_meta,
             )
             db.add(score)
             sess = db.get(DbSession, session_id)
@@ -125,7 +190,12 @@ def run_session_pipeline(session_id: str, upload_path: str, task: str) -> None:
                 sess.progress = 100
                 sess.completed_at = dt.datetime.now(dt.UTC)
             db.commit()
-        log.info("session_pipeline_done", session_id=session_id, mes_mean=result.summary["mes_mean"])
+        log.info(
+            "session_pipeline_done",
+            session_id=session_id,
+            mes_mean=result.summary["mes_mean"],
+            reliability=scored.reliability,
+        )
     except Exception as e:
         log.exception("session_pipeline_failed", session_id=session_id)
         _update(
@@ -142,8 +212,8 @@ def _render_and_store_report(
     erd_topomap: dict,
     lateralization: float,
     model_sha: str,
+    reliability: str = "Medium",
 ) -> str | None:
-    """Render PDF report and upload to HF Hub (best effort)."""
     try:
         with session_scope() as db:
             sess = db.get(DbSession, session_id)
@@ -163,15 +233,14 @@ def _render_and_store_report(
                 mes_per_trial=[float(v) for v in result.mes_per_trial.tolist()],
                 erd_topomap=erd_topomap,
                 lateralization=lateralization,
-                model_sha=model_sha,
+                model_sha=f"{model_sha} · {reliability} reliability",
                 created_at=dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M UTC"),
                 notes=participant.notes or "",
             )
         html = build_session_report_html(ctx)
         out = Path(tempfile.gettempdir()) / f"mes_report_{session_id}.pdf"
         render_pdf(html, out)
-        uri = store_report(out, session_id)
-        return uri
+        return store_report(out, session_id)
     except Exception as e:
         log.warning("report_render_failed", session_id=session_id, err=str(e))
         return None

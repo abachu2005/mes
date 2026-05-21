@@ -25,10 +25,18 @@ from mes_core.scoring import (
 )
 
 
-def fit_from_trials(data_dir: Path, *, max_files: int | None = 60) -> None:
+def fit_from_trials(
+    data_dir: Path, *, max_files: int | None = 60, cohort: str = "healthy"
+) -> None:
+    prefix = "liu2024_" if cohort == "stroke" else "physionet_"
     trials = load_parquet_dir(
-        data_dir, prefix="physionet_", labels={"right_hand", "rest"}, max_files=max_files
+        data_dir, prefix=prefix, labels={"right_hand", "rest"}, max_files=max_files
     )
+    if len(trials) < 30 and cohort == "stroke":
+        print("Stroke parquet sparse; falling back to physionet for weight fit")
+        trials = load_parquet_dir(
+            data_dir, prefix="physionet_", labels={"right_hand", "rest"}, max_files=max_files
+        )
     if len(trials) < 50:
         raise SystemExit(f"Need >=50 trials, got {len(trials)}")
 
@@ -87,12 +95,21 @@ def fit_from_trials(data_dir: Path, *, max_files: int | None = 60) -> None:
     else:
         pop_bl = SubjectBaseline.zeros(4)
 
-    out = weights_bundle_path("right_hand")
+    out = (
+        Path(__file__).resolve().parents[1]
+        / "mes_core/data/mes_weights_right_hand_stroke.json"
+        if cohort == "stroke"
+        else weights_bundle_path("right_hand")
+    )
     write_weights_bundle(
         out,
         weights,
         population_baseline=pop_bl,
-        meta={"n_fit_trials": len(y), "n_rest_trials": int((y == 0).sum())},
+        meta={
+            "n_fit_trials": len(y),
+            "n_rest_trials": int((y == 0).sum()),
+            "cohort": cohort,
+        },
     )
     print("Wrote", out)
     print(weights)
@@ -104,6 +121,7 @@ def main() -> int:
     ap.add_argument("--download", action="store_true", help="Fetch parquet from HF Hub first")
     ap.add_argument("--max-files", type=int, default=40)
     ap.add_argument("--upload", action="store_true", help="Upload bundle to HF model repo")
+    ap.add_argument("--cohort", choices=["healthy", "stroke"], default="healthy")
     args = ap.parse_args()
 
     if args.download or args.data_dir is None:
@@ -111,7 +129,7 @@ def main() -> int:
     else:
         data_dir = args.data_dir
 
-    fit_from_trials(data_dir, max_files=args.max_files)
+    fit_from_trials(data_dir, max_files=args.max_files, cohort=args.cohort)
 
     if args.upload:
         import os

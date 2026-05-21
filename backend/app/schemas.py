@@ -29,6 +29,8 @@ class SessionCreate(BaseModel):
     target_limb: str = "Right hand"
     headset: str = "OpenBCI Cyton+Daisy"
     montage: str = "openbci_16"
+    cohort: str = "healthy"  # healthy | stroke
+    had_rest_block: bool = True
 
 
 class SessionOut(BaseModel):
@@ -61,6 +63,9 @@ class ScoreOut(BaseModel):
     erd_topomap: dict[str, Any]
     raw_features: dict[str, Any]
     model_sha: str | None
+    reliability: str | None = None
+    mes_recovery_z: float | None = None
+    score_meta: dict[str, Any] | None = None
     created_at: dt.datetime
 
 
