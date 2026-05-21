@@ -11,7 +11,7 @@ import structlog
 
 from mes_core.artifacts import load_mes_weights, load_population_baseline
 from mes_core.models.inference import resolve_session_posterior
-from mes_core.preprocessing import PreprocessConfig, epoch_raw, preprocess_raw
+from mes_core.preprocessing import PreprocessConfig, epoch_raw, epoch_sliding_windows, preprocess_raw
 from mes_core.quality import assess_session, reliability_tier
 from mes_core.scoring import MesScoreResult, compute_mes, fit_subject_baseline
 from mes_core.scoring.rest import split_rest_and_task_epochs
@@ -159,6 +159,8 @@ def score_recording(
     raw_pp = preprocess_raw(raw, cfg)
     epochs = epoch_raw(raw_pp)
     data = epochs.get_data() if epochs is not None and len(epochs) > 0 else None
+    if data is None or len(data) == 0:
+        data = epoch_sliding_windows(raw_pp, window_s=6.0, step_s=3.0)
     if data is None or len(data) == 0:
         arr = raw_pp.get_data()
         n_ch, n_t = arr.shape

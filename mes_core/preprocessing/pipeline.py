@@ -192,3 +192,29 @@ def epoch_raw(
             pass
 
     return epochs
+
+
+def epoch_sliding_windows(
+    raw: Any,
+    *,
+    window_s: float = 6.0,
+    step_s: float = 3.0,
+) -> np.ndarray | None:
+    """Slide fixed windows over continuous data when no annotations exist.
+
+    Returns (n_epochs, n_channels, n_samples) or None.
+    """
+    import numpy as np
+
+    data = raw.get_data()
+    sfreq = float(raw.info["sfreq"])
+    win = int(window_s * sfreq)
+    step = max(1, int(step_s * sfreq))
+    if data.shape[1] < win:
+        return None
+    epochs = []
+    for start in range(0, data.shape[1] - win + 1, step):
+        epochs.append(data[:, start : start + win])
+    if not epochs:
+        return None
+    return np.stack(epochs, axis=0)
