@@ -47,7 +47,7 @@ All open-source datasets, loaded via [MOABB](https://moabb.neurotechx.com):
 - Liu2024 — 50 acute stroke patients (hand MI)
 - Liu2025 — 27 stroke patients (gait MI, longitudinal)
 
-Processed datasets are published to [`abachu2005/mes-eeg-processed`](https://huggingface.co/datasets/abachu2005/mes-eeg-processed). Trained ONNX models live at [`abachu2005/mes-models`](https://huggingface.co/abachu2005/mes-models). See [`docs/benchmarks.md`](docs/benchmarks.md) for the validation results.
+Processed datasets are published to [`abachu2005/mes-eeg-processed`](https://huggingface.co/datasets/abachu2005/mes-eeg-processed) (PhysioNet on HF today; stroke Liu2024/2025 via MOABB — see [`docs/datasets.md`](docs/datasets.md)). Trained ONNX models live at [`abachu2005/mes-models`](https://huggingface.co/abachu2005/mes-models). See [`docs/benchmarks.md`](docs/benchmarks.md) for the validation results.
 
 ## Hardware target
 

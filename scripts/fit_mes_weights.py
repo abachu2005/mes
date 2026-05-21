@@ -30,7 +30,10 @@ def fit_from_trials(
 ) -> None:
     prefix = "liu2024_" if cohort == "stroke" else "physionet_"
     trials = load_parquet_dir(
-        data_dir, prefix=prefix, labels={"right_hand", "rest"}, max_files=max_files
+        data_dir,
+        prefix=prefix,
+        labels={"right_hand", "rest", "break"},
+        max_files=max_files,
     )
     if len(trials) < 30 and cohort == "stroke":
         print("Stroke parquet sparse; falling back to physionet for weight fit")
@@ -45,7 +48,7 @@ def fit_from_trials(
 
     by_subj_rest: dict[str, list[np.ndarray]] = {}
     for t in trials:
-        if t.label == "rest":
+        if t.label in ("rest", "break"):
             by_subj_rest.setdefault(t.subject, []).append(t.X)
 
     z_rows: list[np.ndarray] = []
@@ -53,7 +56,7 @@ def fit_from_trials(
     y_rows: list[int] = []
 
     for t in trials:
-        if t.label not in ("right_hand", "rest"):
+        if t.label not in ("right_hand", "rest", "break"):
             continue
         rest_epochs = by_subj_rest.get(t.subject)
         rest_stack = np.stack(rest_epochs) if rest_epochs and len(rest_epochs) >= 2 else None
@@ -89,7 +92,7 @@ def fit_from_trials(
     weights = fit_mes_weights(z, p, y)
 
     # Population baseline from all rest trials
-    rest_only = [t.X[None, ...] for t in trials if t.label == "rest"]
+    rest_only = [t.X[None, ...] for t in trials if t.label in ("rest", "break")]
     if len(rest_only) >= 5:
         pop_bl = fit_subject_baseline(np.concatenate(rest_only), sfreq, ch, "right_hand")
     else:
