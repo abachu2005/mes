@@ -66,6 +66,7 @@ dev = [
     "mypy>=1.10",
     "pre-commit>=3.7",
     "freezegun>=1.4",
+    "edfio>=0.4",
 ]
 docs = [
     "mkdocs>=1.6",
