@@ -1,26 +1,66 @@
 cff-version: 1.2.0
-title: MES — Motor Engagement Signal
+title: "MES: Motor Engagement Signal"
 message: >-
   If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
-  - name: MES Project Authors
-    affiliation: TBD
-repository-code: 'https://github.com/abachu2005/mes'
-url: 'https://huggingface.co/spaces/abachu2005/mes'
+  - family-names: Bachu
+    given-names: Abhinav
+    affiliation: NeuroTechX
+  - family-names: Chandra
+    given-names: Aryan
+    affiliation: NeuroTechX
+  - family-names: Ganesh
+    given-names: Krrish
+    affiliation: NeuroTechX
+  - family-names: Chadha
+    given-names: Krish
+    affiliation: NeuroTechX
+  - family-names: Bachu
+    given-names: Akshaj
+    affiliation: NeuroTechX
+repository-code: "https://github.com/abachu2005/mes"
+url: "https://huggingface.co/spaces/abachu2005/mes"
+abstract: >-
+  MES (Motor Engagement Signal) is an open-source Python library and companion
+  web application that converts clinical-style EEG recordings into a single
+  calibrated 0-100 score reflecting motor-cortical engagement during movement
+  or motor-imagery tasks. It combines mu/beta event-related desynchronization,
+  a lateralization index, movement-related cortical potentials, and an ONNX
+  ensemble of Riemannian and deep-learning classifiers, with weights fit
+  against dataset-provided labels to avoid circularity. MES targets stroke and
+  spinal-cord-injury rehabilitation researchers who need interpretable,
+  session-comparable endpoints rather than decoding accuracy alone, and runs on
+  low-channel ambulatory hardware such as OpenBCI Cyton+Daisy.
 license: Apache-2.0
 version: 0.2.0
+date-released: "2026-08-20"
 keywords:
   - EEG
   - stroke rehabilitation
   - motor imagery
   - brain-computer interface
+  - neurorehabilitation
   - open science
 preferred-citation:
   type: article
-  title: 'MES: Motor Engagement Signal software for open EEG rehabilitation research'
+  title: "MES: Motor Engagement Signal software for open EEG rehabilitation research"
   authors:
-    - name: MES Project Authors
+    - family-names: Bachu
+      given-names: Abhinav
+      affiliation: NeuroTechX
+    - family-names: Chandra
+      given-names: Aryan
+      affiliation: NeuroTechX
+    - family-names: Ganesh
+      given-names: Krrish
+      affiliation: NeuroTechX
+    - family-names: Chadha
+      given-names: Krish
+      affiliation: NeuroTechX
+    - family-names: Bachu
+      given-names: Akshaj
+      affiliation: NeuroTechX
   year: 2026
   journal: Journal of Open Source Software
-  notes: Submit via JOSS; update DOI after acceptance and Zenodo archive.
+  notes: Submit via JOSS; update DOI after acceptance.

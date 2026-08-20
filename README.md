@@ -4,6 +4,8 @@
 
 MES is a research-grade, end-to-end pipeline that takes recorded EEG from a participant performing motor imagery or movement tasks and produces a single, calibrated score (the Motor Engagement Signal, 0–100) reflecting the strength of motor-cortical engagement. It is designed for tracking rehabilitation progress in stroke and spinal-cord-injury patients.
 
+![python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue) ![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-lightgrey) [![DOI](https://zenodo.org/badge/1244336451.svg)](https://zenodo.org/badge/latestdoi/1244336451) [![CI](https://github.com/abachu2005/mes/actions/workflows/ci.yml/badge.svg)](https://github.com/abachu2005/mes/actions/workflows/ci.yml)
+
 > **Research use only — not FDA / CE cleared. Do not enter PHI.**
 
 ## What's in this repo
@@ -77,6 +79,19 @@ make docker-run     # builds image and serves on http://localhost:7860
 - Stroke validation is limited to two open datasets (Liu2024, Liu2025); clinical deployment would require IRB-approved prospective data.
 - HF Space free-tier sleeps after 48 h of inactivity.
 - ICA quality degrades at low channel counts; we run ICA on the full source montage before downsampling to mitigate this.
+
+## Citation
+
+Every tagged release is archived on Zenodo with a citable DOI. Machine-readable
+metadata lives in [`CITATION.cff`](CITATION.cff); GitHub renders it under
+"Cite this repository" in the sidebar.
+
+Cite the concept DOI to always point at the latest release:
+
+```
+Bachu, A., Chandra, A., Ganesh, K., Chadha, K., & Bachu, A.
+MES: Motor Engagement Signal. Zenodo. https://doi.org/10.5281/zenodo.RECORD
+```
 
 ## License
 

@@ -7,12 +7,20 @@ tags:
   - motor imagery
   - BCI
 authors:
-  - name: MES Project Authors
+  - name: Abhinav Bachu
+    affiliation: 1
+  - name: Aryan Chandra
+    affiliation: 1
+  - name: Krrish Ganesh
+    affiliation: 1
+  - name: Krish Chadha
+    affiliation: 1
+  - name: Akshaj Bachu
     affiliation: 1
 affiliations:
-  - name: To be completed by submitting authors
+  - name: NeuroTechX
     index: 1
-date: 21 May 2026
+date: 20 August 2026
 bibliography: paper.bib
 ---
 

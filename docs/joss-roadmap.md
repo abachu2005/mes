@@ -11,7 +11,7 @@ This document tracks readiness for the [Journal of Open Source Software](https:/
 | Research impact evidence | **Action** | Methods preprint + external pilot users |
 | Tests + CI | Done | `pytest`, GitHub Actions |
 | CONTRIBUTING + CoC | Done | Root-level files |
-| Tagged releases | **Action** | Create `v0.2.0` on GitHub after merge |
+| Tagged releases | Done | `v0.2.0` published; Zenodo archives each release |
 
 ## Software scope (center the library)
 
@@ -33,8 +33,8 @@ Pre-trained ONNX on the Hub are **artifacts**, not the submission itself.
 - [x] Software design
 - [x] Research impact (update with preprint DOI before submit)
 - [x] AI usage disclosure
-- [ ] Author affiliations finalized
-- [ ] Zenodo archive DOI after acceptance
+- [x] Author affiliations finalized
+- [x] Zenodo archive DOI (minted from the `v0.2.0` release)
 
 ## Scholarly novelty (companion methods paper)
 

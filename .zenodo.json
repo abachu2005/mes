@@ -1,0 +1,60 @@
+{
+  "title": "MES: Motor Engagement Signal — open-source EEG pipeline for quantifying motor-cortical engagement in rehabilitation",
+  "description": "MES (Motor Engagement Signal) is an open-source Python library and companion web application that converts clinical-style EEG recordings into a single calibrated 0-100 score reflecting motor-cortical engagement during movement or motor-imagery tasks. It combines mu/beta event-related desynchronization, a lateralization index, movement-related cortical potentials, and an ONNX ensemble of Riemannian and deep-learning classifiers, with scoring weights fit against dataset-provided task/rest labels to avoid circularity. MES targets stroke and spinal-cord-injury rehabilitation researchers who need interpretable, session-comparable endpoints rather than decoding accuracy alone, and supports low-channel ambulatory hardware such as OpenBCI Cyton+Daisy. Ships a documented CLI (mes score, mes validate, mes fit-weights), a validation harness, and an optional FastAPI + React dashboard.",
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "version": "0.2.0",
+  "keywords": [
+    "EEG",
+    "stroke rehabilitation",
+    "motor imagery",
+    "brain-computer interface",
+    "neurorehabilitation",
+    "event-related desynchronization",
+    "OpenBCI",
+    "Riemannian geometry",
+    "open science",
+    "NeuroTechX"
+  ],
+  "creators": [
+    {
+      "name": "Bachu, Abhinav",
+      "affiliation": "NeuroTechX"
+    },
+    {
+      "name": "Chandra, Aryan",
+      "affiliation": "NeuroTechX"
+    },
+    {
+      "name": "Ganesh, Krrish",
+      "affiliation": "NeuroTechX"
+    },
+    {
+      "name": "Chadha, Krish",
+      "affiliation": "NeuroTechX"
+    },
+    {
+      "name": "Bachu, Akshaj",
+      "affiliation": "NeuroTechX"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "NeuroTechX",
+      "type": "HostingInstitution"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/abachu2005/mes",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://huggingface.co/spaces/abachu2005/mes",
+      "relation": "isSupplementedBy",
+      "scheme": "url"
+    }
+  ]
+}
