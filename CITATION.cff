@@ -21,6 +21,14 @@ authors:
     affiliation: NeuroTechX
 repository-code: "https://github.com/abachu2005/mes"
 url: "https://huggingface.co/spaces/abachu2005/mes"
+doi: "10.5281/zenodo.22035628"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.22035628"
+    description: "Concept DOI (always resolves to the latest release)"
+  - type: doi
+    value: "10.5281/zenodo.22035629"
+    description: "DOI for version 0.2.0"
 abstract: >-
   MES (Motor Engagement Signal) is an open-source Python library and companion
   web application that converts clinical-style EEG recordings into a single

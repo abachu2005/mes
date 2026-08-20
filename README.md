@@ -90,7 +90,7 @@ Cite the concept DOI to always point at the latest release:
 
 ```
 Bachu, A., Chandra, A., Ganesh, K., Chadha, K., & Bachu, A.
-MES: Motor Engagement Signal. Zenodo. https://doi.org/10.5281/zenodo.RECORD
+MES: Motor Engagement Signal. Zenodo. https://doi.org/10.5281/zenodo.22035628
 ```
 
 ## License
