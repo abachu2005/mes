@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mes_core.config import (
     BASELINE_TMAX,
@@ -27,6 +27,9 @@ from mes_core.config import (
     OPENBCI_MONTAGE_16,
     TARGET_SFREQ,
 )
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 @dataclass

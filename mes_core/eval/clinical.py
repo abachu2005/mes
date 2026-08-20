@@ -9,13 +9,13 @@ from typing import Any
 
 import numpy as np
 
-from mes_core.artifacts import load_mes_weights, weights_bundle_path, write_weights_bundle
+from mes_core.artifacts import load_mes_weights
 from mes_core.config import OPENBCI_MONTAGE_16, TARGET_SFREQ
-from mes_core.eval.outcomes import correlate_mes_with_outcomes, load_outcomes_csv
+from mes_core.eval.outcomes import correlate_mes_with_outcomes
 from mes_core.eval.parquet import ParquetTrial, load_parquet_dir
-from mes_core.eval.validate import ModelEvalRow, run_validation, write_validation_report
+from mes_core.eval.validate import run_validation
 from mes_core.models.inference import resolve_session_posterior
-from mes_core.scoring import MesWeights, compute_mes, fit_mes_weights, fit_subject_baseline
+from mes_core.scoring import MesWeights, compute_mes, fit_subject_baseline
 from mes_core.scoring.rehab_proxy import compute_rehab_proxy
 
 
@@ -183,15 +183,15 @@ def run_clinical_validation(
             k: {kk: vv for kk, vv in v.items() if isinstance(vv, (int, float))}
             for k, v in clinical.items()
         }
-        for key_name, field in (("nihss", "NIHSS"), ("mbi", "MBI"), ("mrs", "mRS")):
+        for field_name in ("NIHSS", "MBI", "mRS"):
             mapped = {
-                code: {field: vals.get(field.lower()) or vals.get(field)}
+                code: {field_name: vals.get(field_name.lower()) or vals.get(field_name)}
                 for code, vals in clin_for_corr.items()
-                if (vals.get(field.lower()) or vals.get(field)) is not None
+                if (vals.get(field_name.lower()) or vals.get(field_name)) is not None
             }
             if mapped:
-                outcome_corr[field] = correlate_mes_with_outcomes(
-                    rpi_by_subj, mapped, outcome_key=field
+                outcome_corr[field_name] = correlate_mes_with_outcomes(
+                    rpi_by_subj, mapped, outcome_key=field_name
                 )
 
     stroke_summary = CohortClinicalSummary(
@@ -203,7 +203,7 @@ def run_clinical_validation(
         notes=notes_stroke
         + [
             "Stroke weights + population baseline from mes_weights_right_hand_stroke.json.",
-            "Rehab Proxy Index (RPI) = paretic-hand MES × capacity (MBI, NIHSS) when clinical TSV present.",
+            "Rehab Proxy Index (RPI) = paretic-hand MES × capacity (MBI, NIHSS) when clinical TSV present.",  # noqa: RUF001
         ],
     )
 
